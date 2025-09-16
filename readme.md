@@ -15,12 +15,12 @@ I use archinstall because I'm a noob and I don't care.
 Make sure you enable multilib before installing the recommended packages. 
 `/etc/pacman.conf`
 
-<pre>```[multilib]
-Include = /etc/pacman.d/mirrorlist``` </pre>
+<pre>[multilib]
+Include = /etc/pacman.d/mirrorlist </pre>
 
 
 Recommended packages:
-<pre> sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager network-manager-applet tldr brightnessctl alsa-utils alsamixer </pre>
+<pre> sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager network-manager-applet tldr brightnessctl alsa-utils alsamixer firefox </pre>
 
 ---
 
@@ -72,6 +72,7 @@ Compiling dwm is pretty easy, same with the rest of the apps. Go into each direc
 
 ## Notes
 WIP — committing changes and coming back to finish.
+
 
 
 
