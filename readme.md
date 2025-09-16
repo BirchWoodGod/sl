@@ -10,8 +10,8 @@ Minimal Install of Arch Linux; I use archinstall cause I'm a noob and I don't ca
 Recommend packages: sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano
 
 I like using the Ly Display Manager for the cool fire animation. Here are some things to note:
-sudo systemctl enable ly 
-sudo systemctl start ly
+'sudo systemctl enable ly'
+'sudo systemctl start ly'
 
 The config file for Ly is located:
 /etc/ly/config.ini
@@ -25,6 +25,7 @@ cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop
 
 
 WIP committing changes and coming back to finish
+
 
 
 
