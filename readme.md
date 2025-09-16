@@ -25,3 +25,4 @@ cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop
 
 
 WIP committing changes and coming back to finish
+
