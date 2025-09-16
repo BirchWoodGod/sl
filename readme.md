@@ -20,7 +20,7 @@ Include = /etc/pacman.d/mirrorlist </pre>
 
 
 Recommended packages:
-<pre> sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager network-manager-applet tldr </pre>
+<pre> sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager network-manager-applet tldr brightnessctl alsa-utils alsamixer </pre>
 
 ---
 
@@ -72,6 +72,7 @@ Compiling dwm is pretty easy, same with the rest of the apps. Go into each direc
 
 ## Notes
 WIP — committing changes and coming back to finish.
+
 
 
 
