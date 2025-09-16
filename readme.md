@@ -1,83 +1,72 @@
-# Personal DWM Configuration
+# Personal Suckless Desktop Setup
 
-Hello,
-
-This is a personal configuration of DWM. It's pretty basic and keeps a lot of the vanilla options.  
-This repo is here for personal notes and as an all-in-one package.
-
-I do not know how to write in MD yet, so this is the best I can do until I learn how. ;)
+This repository contains my patched builds of **dwm**, **dmenu**, **st**, and **slstatus** along with the supporting files I use to get a minimal Arch Linux desktop running quickly. Everything lives in this repo so I can clone it on a fresh install and have the same environment in a couple of commands.
 
 ---
 
-## Minimal Install of Arch Linux
-I use archinstall because I'm a noob and I don't care.  
+## Minimal Arch Install Notes
+- I rely on `archinstall` because it gets me to a working base system fast.
+- Enable the `multilib` repo before installing extras by editing `/etc/pacman.conf` and ensuring the block below is uncommented:
 
-Make sure you enable multilib before installing the recommended packages. 
-`/etc/pacman.conf`
+  ```ini
+  [multilib]
+  Include = /etc/pacman.d/mirrorlist
+  ```
 
-<pre>[multilib]
-Include = /etc/pacman.d/mirrorlist </pre>
+### Recommended packages
+After the base install I normally grab these packages:
 
-
-Recommended packages:
-<pre> sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager network-manager-applet tldr brightnessctl alsa-utils alsamixer firefox </pre>
+```bash
+sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager \
+  network-manager-applet tldr brightnessctl alsa-utils alsamixer firefox
+```
 
 ---
 
 ## Display Manager: Ly
-I like using the Ly Display Manager for the cool fire animation.  
+Ly is my preferred display manager purely for the aesthetics.
 
-Enable and start Ly:
-<pre>sudo systemctl enable ly
-sudo systemctl start ly </pre>
+```bash
+sudo systemctl enable ly
+sudo systemctl start ly
+```
 
-Config file location:
-`/etc/ly/config.ini`
-
-Be sure to log back into the shell after starting ly.
+Configuration lives at `/etc/ly/config.ini`. After starting Ly make sure to log back into the shell once so you can continue setup tasks.
 
 ---
 
-## Xinitrc Config
-In the repo, I have included my xinitrc file for launching dwm and the included apps.  
-You can copy my config as such:
+## Xinitrc and Desktop Entry
+The `misc0` directory contains helper files:
 
-<pre> cp /sl/misc0/xinitrc-config.txt ~/.xinitrc </pre>
+- `xinitrc-config.txt` – copy to `~/.xinitrc` if you start dwm manually.
+- `dwm.desktop` – copy to `/usr/share/xsessions/dwm.desktop` if you want a proper entry in display managers.
 
----
-
-## DWM Desktop Entry
-In the misc0 folder of the repo, I included the dwm.desktop file.  
-You’ll want to copy it into the xsessions directory:
-
-<pre> cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop </pre>
-
-(This isn't really needed as you can start xinit from ly, but I like the entry to say "dwm".)
+```bash
+cp /sl/misc0/xinitrc-config.txt ~/.xinitrc
+sudo cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop
+```
 
 ---
 
-## Building DWM, dmenu, st, sltatus
+## Building the Suckless Components
+`build_suckless.sh` automates compiling and installing each component with `make clean install`.
 
-Things to know: dwm and st have been pre-patched. The patches used are full screen, systray, scrolling, and mouse scrolling.
+```bash
+./build_suckless.sh            # builds dwm, dmenu, st, slstatus
+./build_suckless.sh dwm st     # build only the components you name
+```
 
-You can configure the apps by editing `config.h` in each of the directories. 
+The script checks whether you are already root; otherwise it uses `sudo` if available. Run it from the repository root after adjusting any configuration you want.
 
-Compiling dwm is pretty easy, same with the rest of the apps. Go into each directory and just type:
+If you prefer to build manually, change into each directory (`dwm`, `dmenu`, `st`, `slstatus`) and run:
 
-<pre> sudo make clean install </pre>
+```bash
+sudo make clean install
+```
 
-(thinking about making a script for this)
+Each project ships with a `config.h` you can tweak before building. `dwm` and `st` already include the patches I rely on (fullscreen, systray, scrollback, mouse scrolling).
 
 ---
 
-## Notes
-WIP — committing changes and coming back to finish.
-
-
-
-
-
-
-
-
-
+## Status
+This is a living setup. Expect tweaks over time as I learn more and refine the workflow.
