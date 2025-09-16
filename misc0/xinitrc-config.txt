@@ -5,5 +5,5 @@
 # Executed by startx (run your window manager from here)
 
 slstatus &
-feh ~/pics/darksouls.jpg &
+feh --bg-scale ~/pictures/wallpaper.jpg &
 exec dwm
