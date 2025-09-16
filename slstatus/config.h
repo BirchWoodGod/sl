@@ -70,7 +70,8 @@ static const struct arg args[] = {
 	{ run_command, ": %4s | ", "amixer sget Master | awk -F\"[][]\" '/%/ { print $2 }' | head -n1" },
 	{ netspeed_rx,     " ↓%s",                "enp14s0"   },   /* Wi-Fi download speed */
 	{ netspeed_tx,     " ↑%s",                "enp14s0"   },   /* Wi-Fi upload speed */
-	{ cpu_perc, "[CPU  %s%%]   ", NULL	      },
-	{ ram_perc, "[RAM  %s%%]   ", NULL	      },
-	{ datetime, "%s",           "%a %b %d %r" },
+	//{ battery_perc, "[Bat %s%%] ", "BAT0" }, /* Battery % for laptops */
+	{ cpu_perc, "[CPU  %s%%] ", NULL	      }, /* CPU Usauge */
+	{ ram_perc, "[RAM  %s%%] ", NULL	      }, /* Ram Usuage */
+	{ datetime, "%s",           "%a %b %d %r" }, /* Date & Time */
 };
