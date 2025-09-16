@@ -15,8 +15,8 @@ I use archinstall because I'm a noob and I don't care.
 Make sure you enable multilib before installing the recommended packages. 
 `/etc/pacman.conf`
 
-<pre> ```[multilib]
-Include = /etc/pacman.d/mirrorlist ``` </pre>
+<pre> [multilib]
+Include = /etc/pacman.d/mirrorlist </pre>
 
 
 Recommended packages:
@@ -54,5 +54,6 @@ You’ll want to copy it into the xsessions directory:
 
 ## Notes
 WIP — committing changes and coming back to finish.
+
 
 
