@@ -56,7 +56,7 @@ You’ll want to copy it into the xsessions directory:
 
 ---
 
-##Building DWM, dmenu, st, sltatus
+## Building DWM, dmenu, st, sltatus
 
 Things to know: dwm and st have been pre-patched. The patches used are full screen, systray, scrolling, and mouse scrolling.
 
@@ -72,6 +72,7 @@ Compiling dwm is pretty easy, same with the rest of the apps. Go into each direc
 
 ## Notes
 WIP — committing changes and coming back to finish.
+
 
 
 
