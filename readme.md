@@ -18,7 +18,7 @@ After the base install I normally grab these packages:
 
 ```bash
 sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager \
-  network-manager-applet tldr brightnessctl alsa-utils alsamixer firefox
+  network-manager-applet tldr brightnessctl alsa-utils firefox
 ```
 
 ---
