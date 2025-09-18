@@ -684,58 +684,28 @@ configure_ly_display_manager() {
     echo "Install Ly with: sudo pacman -S ly"
     return
   fi
-  
-  # Double-check: verify ly service exists (check for various possible service names)
-  echo "Debug: Checking for Ly services..."
-  echo "All services containing 'ly':"
-  systemctl list-unit-files | grep -i ly || echo "None found"
-  echo
-  
-  local service_found=false
-  for service_name in "ly.service" "ly-displaymanager.service" "ly@.service"; do
-    echo "Debug: Checking for ${service_name}..."
-    if systemctl list-unit-files | grep -q "^${service_name}"; then
-      echo "Debug: Found ${service_name}!"
-      service_found=true
-      break
-    else
-      echo "Debug: ${service_name} not found"
-    fi
-  done
-  
-  if [ "$service_found" = false ]; then
-    echo "Ly service not found, but continuing with configuration..."
-    echo "This might be normal if Ly uses a different service name."
-  else
-    echo "Ly service found successfully!"
-  fi
 
   echo
   echo "Configuring Ly display manager for dwm..."
 
-  # Enable Ly service (try different service names)
-  local ly_service="ly"
-  for service_name in "ly" "ly-displaymanager" "ly@tty1"; do
-    if systemctl list-unit-files | grep -q "^${service_name}.service"; then
-      ly_service="$service_name"
-      break
-    fi
-  done
-  
-  if systemctl is-enabled "$ly_service" >/dev/null 2>&1; then
-    echo "Ly service ($ly_service) is already enabled."
+  # Enable Ly service
+  echo "Enabling Ly service..."
+  if run_with_privilege systemctl enable ly; then
+    echo "Ly service enabled successfully."
   else
-    echo "Enabling Ly service ($ly_service)..."
-    run_with_privilege systemctl enable "$ly_service"
+    echo "Warning: Failed to enable Ly service, but continuing..."
   fi
 
   # Configure Ly animation
   local ly_config="/etc/ly/config.ini"
   if run_with_privilege test -f "$ly_config"; then
+    echo "Found Ly config file, configuring animation..."
+    
     # Create a backup of the config
     local timestamp
     timestamp=$(date +%Y%m%d%H%M%S)
     run_with_privilege cp "$ly_config" "${ly_config}.${timestamp}.bak"
+    echo "Config backed up to ${ly_config}.${timestamp}.bak"
     
     # Configure Ly animation
     if [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
@@ -743,13 +713,14 @@ configure_ly_display_manager() {
       echo "Choose Ly animation style:"
       echo "1) Default (none)"
       echo "2) Doom"
-      echo "3) CMatrix"
+      echo "3) Matrix"
       echo "4) ColorMix"
       echo "5) Keep current"
       echo
       
       local current_animation
       current_animation=$(run_with_privilege grep -E '^\s*animation\s*=' "$ly_config" 2>/dev/null | sed 's/^\s*animation\s*=\s*//' | tr -d ' ' || echo "none")
+      echo "Current animation: ${current_animation}"
       
       while true; do
         read -r -p "Enter your choice (1-5): " choice || choice=""
@@ -772,6 +743,7 @@ configure_ly_display_manager() {
       done
       
       # Update animation setting
+      echo "Updating animation to: ${chosen_animation}"
       require_command python3 "Python 3 is needed to update Ly animation configuration."
       python3 - "$ly_config" "$chosen_animation" <<'PY'
 import sys
@@ -806,14 +778,15 @@ PY
     echo "Warning: Ly config file not found at $ly_config"
   fi
 
-  # Start Ly service if not running
-  if systemctl is-active "$ly_service" >/dev/null 2>&1; then
-    echo "Ly service ($ly_service) is already running."
+  # Start Ly service
+  echo "Starting Ly service..."
+  if run_with_privilege systemctl start ly; then
+    echo "Ly service started successfully."
   else
-    echo "Starting Ly service ($ly_service)..."
-    run_with_privilege systemctl start "$ly_service"
+    echo "Warning: Failed to start Ly service, but continuing..."
   fi
 
+  echo
   echo "Ly display manager configuration complete."
   echo "You can now reboot to use the graphical login with dwm."
 }
