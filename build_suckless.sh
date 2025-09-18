@@ -289,8 +289,25 @@ ensure_recommended_packages() {
 
   local missing_packages=()
   for package in "${RECOMMENDED_PACKAGES[@]}"; do
-    if ! pacman -Qi "$package" >/dev/null 2>&1; then
-      missing_packages+=("$package")
+    # Check if it's a package group (like xorg) or individual package
+    if pacman -Sg "$package" >/dev/null 2>&1; then
+      # It's a package group, check if any packages from the group are installed
+      local group_installed=false
+      while read -r group_package; do
+        if pacman -Qi "$group_package" >/dev/null 2>&1; then
+          group_installed=true
+          break
+        fi
+      done < <(pacman -Sg "$package" | awk '{print $2}')
+      
+      if [ "$group_installed" = false ]; then
+        missing_packages+=("$package")
+      fi
+    else
+      # It's an individual package
+      if ! pacman -Qi "$package" >/dev/null 2>&1; then
+        missing_packages+=("$package")
+      fi
     fi
   done
 
