@@ -678,8 +678,17 @@ setup_misc_files() {
 }
 
 configure_ly_display_manager() {
-  if ! command -v ly >/dev/null 2>&1; then
-    echo "Ly display manager not found, skipping configuration."
+  # Check if Ly is installed via pacman
+  if ! pacman -Qi ly >/dev/null 2>&1; then
+    echo "Ly display manager not installed, skipping configuration."
+    echo "Install Ly with: sudo pacman -S ly"
+    return
+  fi
+  
+  # Double-check: verify ly service exists
+  if ! systemctl list-unit-files | grep -q "^ly.service"; then
+    echo "Ly service not found, skipping configuration."
+    echo "Ly may not be properly installed."
     return
   fi
 
