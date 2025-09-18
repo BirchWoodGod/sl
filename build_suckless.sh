@@ -26,7 +26,6 @@ BATTERY_CHOICE=""
 BAR_COLOR=""
 COPY_XINIT=""
 COPY_DESKTOP=""
-CHECK_PACKAGES=1
 
 usage() {
   cat <<'EOF'
@@ -45,7 +44,6 @@ Options:
       --no-copy-xinit     Skip copying the xinitrc helper (useful with -y)
       --copy-desktop      Copy misc0/dwm.desktop to /usr/share/xsessions/
       --no-copy-desktop   Skip copying the desktop file (useful with -y)
-      --skip-packages      Skip installing recommended pacman packages
 
 Components default to: dwm dmenu st slstatus
 EOF
@@ -96,9 +94,7 @@ while (($#)); do
     --no-copy-desktop)
       COPY_DESKTOP="no"
       ;;
-    --skip-packages)
-      CHECK_PACKAGES=0
-      ;;
+
     --)
       shift
       while (($#)); do
@@ -196,53 +192,6 @@ prompt_yes_no() {
   done
 }
 
-ensure_recommended_packages() {
-  if [ "$CHECK_PACKAGES" -eq 0 ]; then
-    echo "Skipping recommended package installation check."
-    return
-  fi
-
-  if ! command -v pacman >/dev/null 2>&1; then
-    echo "Warning: pacman not found; skipping recommended package installation." >&2
-    return
-  fi
-
-  local missing_packages=()
-  for package in "${RECOMMENDED_PACKAGES[@]}"; do
-    if ! pacman -Qi "$package" >/dev/null 2>&1; then
-      missing_packages+=("$package")
-    fi
-  done
-
-  if [ ${#missing_packages[@]} -eq 0 ]; then
-    echo "All recommended packages are already installed."
-    return
-  fi
-
-  echo "Recommended packages not found: ${missing_packages[*]}"
-
-  local should_install="yes"
-  if [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
-    if prompt_yes_no "Install recommended packages with pacman?" "y"; then
-      should_install="yes"
-    else
-      should_install="no"
-    fi
-  fi
-
-  if [ "$should_install" = "yes" ]; then
-    local pacman_cmd=(pacman -Sy --needed)
-    if [ "$ACCEPT_DEFAULTS" -eq 1 ]; then
-      pacman_cmd+=(--noconfirm)
-    fi
-    pacman_cmd+=("${missing_packages[@]}")
-    echo "Installing recommended packages: ${missing_packages[*]}"
-    run_with_privilege "${pacman_cmd[@]}"
-    echo "Recommended packages installation complete."
-  else
-    echo "Skipping installation of recommended packages."
-  fi
-}
 
 configure_slstatus_interface() {
   local config_file="${REPO_ROOT}/slstatus/config.h"
@@ -446,7 +395,6 @@ setup_misc_files() {
   fi
 }
 
-ensure_recommended_packages
 
 if component_selected "slstatus"; then
   configure_slstatus_interface

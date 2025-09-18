@@ -82,9 +82,6 @@ cp /sl/misc0/xinitrc-config.txt ~/.xinitrc
 sudo cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop
 ```
 
-### Building the suckless components by hand
-Change into each directory (`dwm`, `dmenu`, `st`, `slstatus`) and run:
-
 ```bash
 sudo make clean install
 ```
