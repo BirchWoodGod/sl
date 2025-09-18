@@ -848,11 +848,12 @@ for component in "${COMPONENTS[@]}"; do
   echo "${component} build complete."
   echo
 
-  # Configure Ly display manager after dwm is built
-  if [ "$component" = "dwm" ]; then
-    configure_ly_display_manager
-  fi
-
 done
 
 echo "All requested components built."
+
+# Configure Ly display manager after all components are built (if dwm was built)
+if component_selected "dwm"; then
+  echo
+  configure_ly_display_manager
+fi
