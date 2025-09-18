@@ -4,6 +4,21 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 DEFAULT_COMPONENTS=(dwm dmenu st slstatus)
+RECOMMENDED_PACKAGES=(
+  feh
+  ly
+  xorg
+  xorg-xinit
+  fastfetch
+  htop
+  nano
+  networkmanager
+  network-manager-applet
+  tldr
+  brightnessctl
+  alsa-utils
+  firefox
+)
 
 ACCEPT_DEFAULTS=0
 SLSTATUS_INTERFACE=""
@@ -79,6 +94,7 @@ while (($#)); do
     --no-copy-desktop)
       COPY_DESKTOP="no"
       ;;
+
     --)
       shift
       while (($#)); do
@@ -175,6 +191,7 @@ prompt_yes_no() {
     esac
   done
 }
+
 
 configure_slstatus_interface() {
   local config_file="${REPO_ROOT}/slstatus/config.h"
@@ -377,6 +394,7 @@ setup_misc_files() {
     copy_with_backup "$desktop_source" "$desktop_target" "yes"
   fi
 }
+
 
 if component_selected "slstatus"; then
   configure_slstatus_interface
