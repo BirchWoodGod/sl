@@ -677,6 +677,151 @@ setup_misc_files() {
   fi
 }
 
+configure_ly_display_manager() {
+  if ! command -v ly >/dev/null 2>&1; then
+    echo "Ly display manager not found, skipping configuration."
+    return
+  fi
+
+  echo
+  echo "Configuring Ly display manager for dwm..."
+
+  # Enable Ly service
+  if systemctl is-enabled ly >/dev/null 2>&1; then
+    echo "Ly service is already enabled."
+  else
+    echo "Enabling Ly service..."
+    run_with_privilege systemctl enable ly
+  fi
+
+  # Configure Ly to show dwm in the session list
+  local ly_config="/etc/ly/config.ini"
+  if [ -f "$ly_config" ]; then
+    # Create a backup of the config
+    local timestamp
+    timestamp=$(date +%Y%m%d%H%M%S)
+    run_with_privilege cp "$ly_config" "${ly_config}.${timestamp}.bak"
+    
+    # Check if dwm is already configured
+    if grep -q "dwm" "$ly_config" 2>/dev/null; then
+      echo "dwm is already configured in Ly."
+    else
+      echo "Adding dwm to Ly session list..."
+      
+      # Add dwm to the sessions list
+      require_command python3 "Python 3 is needed to update Ly configuration."
+      python3 - "$ly_config" <<'PY'
+import sys
+
+path = sys.argv[1]
+with open(path, 'r') as fh:
+    lines = fh.readlines()
+
+# Find the sessions line and add dwm if not present
+updated_lines = []
+for line in lines:
+    if line.strip().startswith('sessions='):
+        # Extract current sessions
+        sessions_str = line.split('=', 1)[1].strip()
+        sessions = [s.strip() for s in sessions_str.split(',') if s.strip()]
+        
+        # Add dwm if not already present
+        if 'dwm' not in sessions:
+            sessions.append('dwm')
+            new_sessions_str = ', '.join(sessions)
+            updated_lines.append(f'sessions={new_sessions_str}\n')
+        else:
+            updated_lines.append(line)
+    else:
+        updated_lines.append(line)
+
+with open(path, 'w') as fh:
+    fh.writelines(updated_lines)
+PY
+      echo "Added dwm to Ly session list."
+    fi
+
+    # Configure Ly animation
+    if [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
+      echo
+      echo "Choose Ly animation style:"
+      echo "1) Default (none)"
+      echo "2) Doom"
+      echo "3) CMatrix"
+      echo "4) ColorMix"
+      echo "5) Keep current"
+      echo
+      
+      local current_animation
+      current_animation=$(grep -E '^\s*animation\s*=' "$ly_config" 2>/dev/null | sed 's/^\s*animation\s*=\s*//' | tr -d ' ' || echo "none")
+      
+      while true; do
+        read -r -p "Enter your choice (1-5): " choice || choice=""
+        case "$choice" in
+          1) chosen_animation="none"; break ;;
+          2) chosen_animation="doom"; break ;;
+          3) chosen_animation="matrix"; break ;;
+          4) chosen_animation="colormix"; break ;;
+          5) chosen_animation="$current_animation"; break ;;
+          *)
+            if [ -n "$choice" ]; then
+              echo "Invalid choice. Please enter a number between 1-5." >&2
+            else
+              echo "No choice entered, keeping current: ${current_animation}" >&2
+              chosen_animation="$current_animation"
+              break
+            fi
+            ;;
+        esac
+      done
+      
+      # Update animation setting
+      require_command python3 "Python 3 is needed to update Ly animation configuration."
+      python3 - "$ly_config" "$chosen_animation" <<'PY'
+import sys
+import re
+
+path, animation = sys.argv[1:3]
+with open(path, 'r') as fh:
+    lines = fh.readlines()
+
+# Update or add animation setting
+updated_lines = []
+animation_found = False
+
+for line in lines:
+    # Match animation=value or animation = value (with any amount of whitespace)
+    if re.match(r'^\s*animation\s*=\s*', line):
+        updated_lines.append(f'animation = {animation}\n')
+        animation_found = True
+    else:
+        updated_lines.append(line)
+
+# If animation setting wasn't found, add it
+if not animation_found:
+    updated_lines.append(f'animation = {animation}\n')
+
+with open(path, 'w') as fh:
+    fh.writelines(updated_lines)
+PY
+      echo "Updated Ly animation to '${chosen_animation}'."
+    fi
+  else
+    echo "Warning: Ly config file not found at $ly_config"
+  fi
+
+  # Start Ly service if not running
+  if systemctl is-active ly >/dev/null 2>&1; then
+    echo "Ly service is already running."
+  else
+    echo "Starting Ly service..."
+    run_with_privilege systemctl start ly
+  fi
+
+  echo "Ly display manager configuration complete."
+  echo "You can now reboot to use the graphical login with dwm."
+}
+
 ensure_recommended_packages
 
 if component_selected "slstatus"; then
@@ -702,6 +847,11 @@ for component in "${COMPONENTS[@]}"; do
   echo
   echo "${component} build complete."
   echo
+
+  # Configure Ly display manager after dwm is built
+  if [ "$component" = "dwm" ]; then
+    configure_ly_display_manager
+  fi
 
 done
 
