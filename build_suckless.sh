@@ -510,7 +510,7 @@ path, color = sys.argv[1:3]
 with open(path, encoding='utf-8') as fh:
     data = fh.read()
 
-pattern = re.compile(r'(static const char col_cyan\[] = ")([^"]+)(";)')
+pattern = re.compile(r'(static const char col_cyan\[\]\s*=\s*")([^"]+)(";)')
 if not pattern.search(data):
     sys.stderr.write('Warning: could not locate col_cyan definition.\n')
 else:
