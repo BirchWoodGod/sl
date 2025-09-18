@@ -7,6 +7,7 @@ This repository contains my patched builds of **dwm**, **dmenu**, **st**, and **
 ## Automated setup with `build_suckless.sh`
 The `build_suckless.sh` helper takes care of the entire workflow for a fresh install:
 
+
 - Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed).
 - Lets you interactively adjust slstatus' network interface and battery widgets.
 - Lets you set the dwm status bar highlight color (written to `dwm/config.h`).
@@ -81,6 +82,7 @@ The `misc0` directory contains helper files:
 cp /sl/misc0/xinitrc-config.txt ~/.xinitrc
 sudo cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop
 ```
+
 
 ### Building the suckless components by hand
 Change into each directory (`dwm`, `dmenu`, `st`, `slstatus`) and run:

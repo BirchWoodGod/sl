@@ -47,6 +47,7 @@ Options:
       --no-copy-desktop   Skip copying the desktop file (useful with -y)
       --skip-packages      Skip installing recommended pacman packages
 
+
 Components default to: dwm dmenu st slstatus
 EOF
 }
@@ -322,6 +323,7 @@ ensure_recommended_packages() {
     echo "Skipping installation of recommended packages."
   fi
 }
+
 
 configure_slstatus_interface() {
   local config_file="${REPO_ROOT}/slstatus/config.h"
