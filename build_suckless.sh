@@ -685,22 +685,48 @@ configure_ly_display_manager() {
     return
   fi
   
-  # Double-check: verify ly service exists
-  if ! systemctl list-unit-files | grep -q "^ly.service"; then
-    echo "Ly service not found, skipping configuration."
-    echo "Ly may not be properly installed."
-    return
+  # Double-check: verify ly service exists (check for various possible service names)
+  echo "Debug: Checking for Ly services..."
+  echo "All services containing 'ly':"
+  systemctl list-unit-files | grep -i ly || echo "None found"
+  echo
+  
+  local service_found=false
+  for service_name in "ly.service" "ly-displaymanager.service" "ly@.service"; do
+    echo "Debug: Checking for ${service_name}..."
+    if systemctl list-unit-files | grep -q "^${service_name}"; then
+      echo "Debug: Found ${service_name}!"
+      service_found=true
+      break
+    else
+      echo "Debug: ${service_name} not found"
+    fi
+  done
+  
+  if [ "$service_found" = false ]; then
+    echo "Ly service not found, but continuing with configuration..."
+    echo "This might be normal if Ly uses a different service name."
+  else
+    echo "Ly service found successfully!"
   fi
 
   echo
   echo "Configuring Ly display manager for dwm..."
 
-  # Enable Ly service
-  if systemctl is-enabled ly >/dev/null 2>&1; then
-    echo "Ly service is already enabled."
+  # Enable Ly service (try different service names)
+  local ly_service="ly"
+  for service_name in "ly" "ly-displaymanager" "ly@tty1"; do
+    if systemctl list-unit-files | grep -q "^${service_name}.service"; then
+      ly_service="$service_name"
+      break
+    fi
+  done
+  
+  if systemctl is-enabled "$ly_service" >/dev/null 2>&1; then
+    echo "Ly service ($ly_service) is already enabled."
   else
-    echo "Enabling Ly service..."
-    run_with_privilege systemctl enable ly
+    echo "Enabling Ly service ($ly_service)..."
+    run_with_privilege systemctl enable "$ly_service"
   fi
 
   # Configure Ly animation
@@ -781,11 +807,11 @@ PY
   fi
 
   # Start Ly service if not running
-  if systemctl is-active ly >/dev/null 2>&1; then
-    echo "Ly service is already running."
+  if systemctl is-active "$ly_service" >/dev/null 2>&1; then
+    echo "Ly service ($ly_service) is already running."
   else
-    echo "Starting Ly service..."
-    run_with_privilege systemctl start ly
+    echo "Starting Ly service ($ly_service)..."
+    run_with_privilege systemctl start "$ly_service"
   fi
 
   echo "Ly display manager configuration complete."
