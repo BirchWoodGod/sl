@@ -745,7 +745,7 @@ configure_ly_display_manager() {
       # Update animation setting
       echo "Updating animation to: ${chosen_animation}"
       require_command python3 "Python 3 is needed to update Ly animation configuration."
-      python3 - "$ly_config" "$chosen_animation" <<'PY'
+      run_with_privilege python3 - "$ly_config" "$chosen_animation" <<'PY'
 import sys
 import re
 
