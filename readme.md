@@ -2,6 +2,8 @@
 
 This repository contains my patched builds of **dwm**, **dmenu**, **st**, and **slstatus** along with the supporting files I use to get a minimal Arch Linux desktop running quickly. Everything lives in this repo so I can clone it on a fresh install and have the same environment in a couple of commands.
 
+> **Note**: The `build_suckless.sh` script was developed with assistance from AI to automate the setup process and provide an enhanced user experience with interactive menus and automatic configuration.
+
 ---
 
 ## Automated setup with `build_suckless.sh`
