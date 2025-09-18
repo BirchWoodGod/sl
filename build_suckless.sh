@@ -221,7 +221,6 @@ ensure_multilib_repo_enabled() {
 
   echo "Enabling pacman multilib repository in $pacman_conf."
   if run_with_privilege python3 - "$pacman_conf" <<'PY'
-  then
 import sys
 
 path = sys.argv[1]
