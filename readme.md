@@ -49,11 +49,30 @@ sudo cp /sl/misc0/dwm.desktop /usr/share/xsessions/dwm.desktop
 ---
 
 ## Building the Suckless Components
-`build_suckless.sh` automates compiling and installing each component with `make clean install`.
+`build_suckless.sh` now automates everything called out in this README: it can copy helper files, update config defaults, and compile/install each component.
 
 ```bash
-./build_suckless.sh            # builds dwm, dmenu, st, slstatus
+./build_suckless.sh            # full interactive run (dwm, dmenu, st, slstatus)
 ./build_suckless.sh dwm st     # build only the components you name
+./build_suckless.sh -y         # keep current configs and skip prompts
+./build_suckless.sh --help     # show all options
+```
+
+During an interactive run the script will:
+
+1. Ask for the network interface used by the slstatus bandwidth widgets.
+2. Ask whether to display battery percentage in slstatus.
+3. Let you pick the hex color for the highlighted dwm bar (the value written to `dwm/config.h` line 19).
+4. Offer to copy the helper files in `misc0/` to the correct locations:
+   - `misc0/xinitrc-config.txt` → `~/.xinitrc`
+   - `misc0/dwm.desktop` → `/usr/share/xsessions/dwm.desktop`
+5. Build whichever components you requested via `make clean install` (using `sudo` when needed).
+
+You can also pre-seed answers with flags if you want a non-interactive run. Examples:
+
+```bash
+./build_suckless.sh --interface wlan0 --battery --bar-color "#268bd2"
+./build_suckless.sh --no-copy-desktop --copy-xinit dmenu
 ```
 
 The script checks whether you are already root; otherwise it uses `sudo` if available. Run it from the repository root after adjusting any configuration you want.
