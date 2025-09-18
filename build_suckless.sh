@@ -426,12 +426,78 @@ PY
 configure_dwm_bar_color() {
   local config_file="${REPO_ROOT}/dwm/config.h"
   local current_color
-  current_color=$(sed -n 's/.*col_cyan\[] = "\(.*\)";/\1/p' "$config_file" | head -n1)
+  current_color=$(sed -n 's/.*col_cyan\[\].*= "\([^"]*\)";/\1/p' "$config_file" | head -n1)
   current_color=${current_color:-#000000}
 
   local chosen_color="$BAR_COLOR"
   if [ -z "$chosen_color" ] && [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
-    read -r -p "Hex color for dwm selected bar background (current: ${current_color}): " chosen_color || chosen_color=""
+    echo
+    echo "Choose a color for the dwm selected bar background (current: ${current_color}):"
+    echo "1) Solarized Blue    #268bd2"
+    echo "2) Solarized Cyan    #2aa198"
+    echo "3) Solarized Green   #859900"
+    echo "4) Solarized Yellow  #b58900"
+    echo "5) Solarized Orange  #cb4b16"
+    echo "6) Solarized Red     #dc322f"
+    echo "7) Solarized Magenta #d33682"
+    echo "8) Solarized Violet  #6c71c4"
+    echo "9) Nord Blue         #5e81ac"
+    echo "10) Nord Red         #bf616a"
+    echo "11) Nord Green       #a3be8c"
+    echo "12) Nord Yellow      #ebcb8b"
+    echo "13) Gruvbox Blue     #458588"
+    echo "14) Gruvbox Red      #cc241d"
+    echo "15) Gruvbox Green    #98971a"
+    echo "16) Custom hex color"
+    echo "17) Keep current     ${current_color}"
+    echo
+    
+    while true; do
+      read -r -p "Enter your choice (1-17): " choice || choice=""
+      case "$choice" in
+        1) chosen_color="#268bd2"; break ;;
+        2) chosen_color="#2aa198"; break ;;
+        3) chosen_color="#859900"; break ;;
+        4) chosen_color="#b58900"; break ;;
+        5) chosen_color="#cb4b16"; break ;;
+        6) chosen_color="#dc322f"; break ;;
+        7) chosen_color="#d33682"; break ;;
+        8) chosen_color="#6c71c4"; break ;;
+        9) chosen_color="#5e81ac"; break ;;
+        10) chosen_color="#bf616a"; break ;;
+        11) chosen_color="#a3be8c"; break ;;
+        12) chosen_color="#ebcb8b"; break ;;
+        13) chosen_color="#458588"; break ;;
+        14) chosen_color="#cc241d"; break ;;
+        15) chosen_color="#98971a"; break ;;
+        16)
+          while true; do
+            read -r -p "Enter custom hex color (e.g., #ff0000): " custom_color || custom_color=""
+            if [[ "$custom_color" =~ ^#[0-9a-fA-F]{6}$ ]]; then
+              chosen_color="$custom_color"
+              break
+            elif [ -n "$custom_color" ]; then
+              echo "Invalid format. Please use format like #ff0000 (6 hex digits after #)." >&2
+            else
+              echo "No color entered, keeping current: ${current_color}" >&2
+              chosen_color="$current_color"
+              break
+            fi
+          done
+          break
+          ;;
+        17) chosen_color="$current_color"; break ;;
+        *)
+          if [ -n "$choice" ]; then
+            echo "Invalid choice. Please enter a number between 1-17." >&2
+          else
+            echo "No choice entered, keeping current: ${current_color}" >&2
+            chosen_color="$current_color"
+            break
+          fi
+          ;;
+      esac
+    done
   fi
 
   if [ -n "$chosen_color" ]; then
