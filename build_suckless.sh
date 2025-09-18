@@ -18,6 +18,7 @@ RECOMMENDED_PACKAGES=(
   brightnessctl
   alsa-utils
   firefox
+  net-tools
 )
 
 ACCEPT_DEFAULTS=0
@@ -350,7 +351,73 @@ configure_slstatus_interface() {
 
   local chosen_iface="$SLSTATUS_INTERFACE"
   if [ -z "$chosen_iface" ] && [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
-    read -r -p "Network interface for slstatus netspeed widgets (current: ${current_iface}): " chosen_iface || chosen_iface=""
+    echo
+    echo "Choose network interface for slstatus netspeed widgets (current: ${current_iface}):"
+    
+    # Get list of network interfaces
+    local interfaces=()
+    if command -v ip >/dev/null 2>&1; then
+      # Use ip command (preferred on modern systems)
+      while read -r iface; do
+        if [ -n "$iface" ] && [[ "$iface" != "lo" ]]; then
+          interfaces+=("$iface")
+        fi
+      done < <(ip link show | grep -E '^[0-9]+:' | sed 's/^[0-9]*: \([^:]*\):.*/\1/' | grep -v '^lo$')
+    elif command -v ifconfig >/dev/null 2>&1; then
+      # Fallback to ifconfig
+      while read -r iface; do
+        if [ -n "$iface" ] && [[ "$iface" != "lo" ]]; then
+          interfaces+=("$iface")
+        fi
+      done < <(ifconfig -a | grep -E '^[a-zA-Z]' | awk '{print $1}' | sed 's/://' | grep -v '^lo$')
+    else
+      echo "Warning: Neither 'ip' nor 'ifconfig' found. Cannot detect network interfaces." >&2
+      read -r -p "Enter network interface manually: " chosen_iface || chosen_iface=""
+    fi
+    
+    if [ ${#interfaces[@]} -gt 0 ]; then
+      # Display interface menu
+      local i=1
+      for iface in "${interfaces[@]}"; do
+        echo "${i}) ${iface}"
+        ((i++))
+      done
+      echo "${i}) Custom interface"
+      echo "$((i+1))) Keep current (${current_iface})"
+      echo
+      
+      while true; do
+        read -r -p "Enter your choice (1-$((i+1))): " choice || choice=""
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le $((i+1)) ]; then
+          if [ "$choice" -eq "$i" ]; then
+            # Custom interface option
+            read -r -p "Enter custom interface name: " custom_iface || custom_iface=""
+            if [ -n "$custom_iface" ]; then
+              chosen_iface="$custom_iface"
+              break
+            else
+              echo "No interface entered, keeping current: ${current_iface}" >&2
+              chosen_iface="$current_iface"
+              break
+            fi
+          elif [ "$choice" -eq $((i+1)) ]; then
+            # Keep current option
+            chosen_iface="$current_iface"
+            break
+          else
+            # Selected interface from list
+            chosen_iface="${interfaces[$((choice-1))]}"
+            break
+          fi
+        elif [ -n "$choice" ]; then
+          echo "Invalid choice. Please enter a number between 1 and $((i+1))." >&2
+        else
+          echo "No choice entered, keeping current: ${current_iface}" >&2
+          chosen_iface="$current_iface"
+          break
+        fi
+      done
+    fi
   fi
 
   if [ -n "$chosen_iface" ]; then
