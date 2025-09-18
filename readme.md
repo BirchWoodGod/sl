@@ -7,11 +7,12 @@ This repository contains my patched builds of **dwm**, **dmenu**, **st**, and **
 ## Automated setup with `build_suckless.sh`
 The `build_suckless.sh` helper takes care of the entire workflow for a fresh install:
 
-
-- Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed).
-- Lets you interactively adjust slstatus' network interface and battery widgets.
-- Lets you set the dwm status bar highlight color (written to `dwm/config.h`).
-- Copies helper files from `misc0/` into place and builds each requested component.
+- **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed).
+- **Network Interface Detection**: Automatically detects available network interfaces and lets you choose which one to use for slstatus bandwidth widgets.
+- **Battery Configuration**: Optionally enables battery percentage display in slstatus.
+- **Color Picker**: Interactive menu to choose dwm status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or custom hex values.
+- **Ly Display Manager**: Automatically configures Ly display manager with animation selection (Doom, Matrix, ColorMix) and enables the service.
+- **File Management**: Copies helper files from `misc0/` into place and builds each requested component.
 
 ```bash
 ./build_suckless.sh            # full interactive run (dwm, dmenu, st, slstatus)
@@ -22,14 +23,24 @@ The `build_suckless.sh` helper takes care of the entire workflow for a fresh ins
 
 During an interactive run the script will:
 
-1. Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
-2. Ask for the network interface used by the slstatus bandwidth widgets.
-3. Ask whether to display battery percentage in slstatus.
-4. Let you pick the hex color for the highlighted dwm bar (the value written to `dwm/config.h` line 19).
-5. Offer to copy the helper files in `misc0/` to the correct locations:
+1. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
+
+2. **Network Interface Selection**: Automatically detect available network interfaces and present a numbered menu for you to choose which one to use for slstatus bandwidth widgets.
+
+3. **Battery Configuration**: Ask whether to display battery percentage in slstatus.
+
+4. **Color Selection**: Present an interactive menu to choose the dwm status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or enter a custom hex value.
+
+5. **File Management**: Offer to copy the helper files in `misc0/` to the correct locations:
    - `misc0/xinitrc-config.txt` → `~/.xinitrc`
    - `misc0/dwm.desktop` → `/usr/share/xsessions/dwm.desktop`
-6. Build whichever components you requested via `make clean install` (using `sudo` when needed).
+
+6. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed).
+
+7. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
+   - Enable and start the Ly service
+   - Present animation selection menu (Doom, Matrix, ColorMix, or none)
+   - Create backup of Ly config before making changes
 
 You can pre-seed answers with flags if you want a non-interactive run. Examples:
 
@@ -59,18 +70,24 @@ If you prefer to handle packages manually, install them with:
 
 ```bash
 sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager \
-  network-manager-applet tldr brightnessctl alsa-utils firefox
+  network-manager-applet tldr brightnessctl alsa-utils firefox net-tools
 ```
 
 ### Display manager: Ly
-Ly is my preferred display manager purely for the aesthetics.
+Ly is my preferred display manager purely for the aesthetics. The automated script handles the complete setup, but if you prefer manual configuration:
 
 ```bash
 sudo systemctl enable ly
 sudo systemctl start ly
 ```
 
-Configuration lives at `/etc/ly/config.ini`. After starting Ly make sure to log back into the shell once so you can continue setup tasks.
+Configuration lives at `/etc/ly/config.ini`. Available animations include:
+- `doom` - Doom-style animation
+- `matrix` - Matrix digital rain effect  
+- `colormix` - Color mixing animation
+- `none` - No animation (default)
+
+The script automatically configures Ly with your chosen animation and enables the service.
 
 ### Xinitrc and desktop entry
 The `misc0` directory contains helper files:
