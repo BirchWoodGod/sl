@@ -37,7 +37,7 @@ During an interactive run the script will:
    - `misc0/xinitrc-config.txt` → `~/.xinitrc`
    - `misc0/dwm.desktop` → `/usr/share/xsessions/dwm.desktop`
 
-6. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed).
+6. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
 
 7. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
    - Enable and start the Ly service
@@ -111,6 +111,13 @@ sudo make clean install
 ```
 
 Each project ships with a `config.h` you can tweak before building. `dwm` and `st` already include the patches I rely on (fullscreen, systray, scrollback, mouse scrolling).
+
+### dmenu and Desktop Entry Support
+The `dmenu` component includes **j4-dmenu-desktop** for desktop entry support. When you build `dmenu`, the script automatically builds and installs j4-dmenu-desktop as well. This enables `dmenu_run` to show both:
+- Executables from your `$PATH`
+- Applications from `.desktop` files (including AppImage launcher entries)
+
+j4-dmenu-desktop source code is included in `dmenu/j4-dmenu-desktop/` and is licensed under **GPL-3.0-or-later** (see `dmenu/j4-dmenu-desktop/LICENSE`). The build script uses Meson (preferred) or CMake to build j4-dmenu-desktop, so ensure one of these is installed.
 
 ---
 

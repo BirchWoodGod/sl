@@ -1,2 +1,5 @@
 #!/bin/sh
-dmenu_path | dmenu "$@" | ${SHELL:-"/bin/sh"} &
+{
+    dmenu_path
+    j4-dmenu-desktop --no-generic --dmenu="dmenu" --term="st" 2>/dev/null | cut -d' ' -f1
+} | dmenu "$@" | ${SHELL:-"/bin/sh"} &

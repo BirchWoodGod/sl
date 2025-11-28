@@ -181,6 +181,48 @@ component_selected() {
   return 1
 }
 
+build_j4_dmenu_desktop() {
+  local j4_dir="${REPO_ROOT}/dmenu/j4-dmenu-desktop"
+  
+  if [ ! -d "$j4_dir" ]; then
+    echo "Warning: j4-dmenu-desktop directory not found at ${j4_dir}. Skipping j4-dmenu-desktop build." >&2
+    return
+  fi
+  
+  echo "==> Building j4-dmenu-desktop"
+  
+  # Check for meson (preferred) or cmake
+  if command -v meson >/dev/null 2>&1; then
+    local build_dir="${j4_dir}/build"
+    if [ ! -d "$build_dir" ]; then
+      # Setup meson build directory
+      (cd "$j4_dir" && ./meson-setup.sh build)
+    fi
+    if (cd "$j4_dir" && meson compile -C build); then
+      (cd "$j4_dir" && run_with_privilege meson install -C build)
+      echo "j4-dmenu-desktop build complete."
+    else
+      echo "Warning: j4-dmenu-desktop build failed, but continuing..." >&2
+    fi
+  elif command -v cmake >/dev/null 2>&1; then
+    local build_dir="${j4_dir}/build"
+    if [ ! -d "$build_dir" ]; then
+      mkdir -p "$build_dir"
+      (cd "$build_dir" && cmake ..)
+    fi
+    if (cd "$build_dir" && make); then
+      (cd "$build_dir" && run_with_privilege make install)
+      echo "j4-dmenu-desktop build complete."
+    else
+      echo "Warning: j4-dmenu-desktop build failed, but continuing..." >&2
+    fi
+  else
+    echo "Warning: Neither meson nor cmake found. Skipping j4-dmenu-desktop build." >&2
+    echo "Install meson (preferred) or cmake to build j4-dmenu-desktop." >&2
+  fi
+  echo
+}
+
 prompt_yes_no() {
   local prompt="$1"
   local default_answer="$2"
@@ -911,6 +953,11 @@ for component in "${COMPONENTS[@]}"; do
   echo
   echo "${component} build complete."
   echo
+
+  # Build j4-dmenu-desktop after dmenu is built
+  if [ "$component" = "dmenu" ]; then
+    build_j4_dmenu_desktop
+  fi
 
 done
 

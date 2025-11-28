@@ -1,0 +1,32 @@
+# Build artifacts from all suckless tools
+
+# Binary executables
+dwm/dwm
+dmenu/dmenu
+dmenu/stest
+st/st
+slstatus/slstatus
+
+# Object files
+*.o
+dwm/*.o
+dmenu/*.o
+st/*.o
+slstatus/*.o
+slstatus/components/*.o
+
+# Patch artifacts
+*.orig
+*.rej
+dwm/*.orig
+dwm/*.rej
+st/*.orig
+st/*.rej
+
+# j4-dmenu-desktop build artifacts
+dmenu/j4-dmenu-desktop/j4-dmenu-desktop
+dmenu/j4-dmenu-desktop/*.o
+dmenu/j4-dmenu-desktop/build/
+dmenu/j4-dmenu-desktop/meson-native/
+dmenu/j4-dmenu-desktop/generated/
+
