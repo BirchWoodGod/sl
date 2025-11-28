@@ -25,6 +25,7 @@ ACCEPT_DEFAULTS=0
 SLSTATUS_INTERFACE=""
 BATTERY_CHOICE=""
 BAR_COLOR=""
+MODKEY_CHOICE=""
 COPY_XINIT=""
 COPY_DESKTOP=""
 CHECK_PACKAGES=1
@@ -42,6 +43,7 @@ Options:
       --battery           Enable the battery widget in slstatus
       --no-battery        Disable the battery widget in slstatus
       --bar-color COLOR   Hex color to use for the dwm selected bar background
+      --modkey KEY        Set dwm modkey: 'super' or 'alt' (default: alt)
       --copy-xinit        Copy misc0/xinitrc-config.txt to ~/.xinitrc
       --no-copy-xinit     Skip copying the xinitrc helper (useful with -y)
       --copy-desktop      Copy misc0/dwm.desktop to /usr/share/xsessions/
@@ -84,6 +86,22 @@ while (($#)); do
         exit 1
       fi
       BAR_COLOR="$2"
+      shift
+      ;;
+    --modkey)
+      if [ $# -lt 2 ]; then
+        echo "Error: --modkey requires a value (super or alt)." >&2
+        exit 1
+      fi
+      case "$2" in
+        super|alt)
+          MODKEY_CHOICE="$2"
+          ;;
+        *)
+          echo "Error: --modkey must be 'super' or 'alt'." >&2
+          exit 1
+          ;;
+      esac
       shift
       ;;
     --copy-xinit)
@@ -606,6 +624,82 @@ PY
   fi
 }
 
+configure_dwm_modkey() {
+  local config_file="${REPO_ROOT}/dwm/config.h"
+  # Fallback to config.def.h if config.h doesn't exist
+  if [ ! -f "$config_file" ]; then
+    config_file="${REPO_ROOT}/dwm/config.def.h"
+  fi
+
+  local current_modkey
+  if grep -q '#define MODKEY Mod4Mask' "$config_file" 2>/dev/null; then
+    current_modkey="super"
+  elif grep -q '#define MODKEY Mod1Mask' "$config_file" 2>/dev/null; then
+    current_modkey="alt"
+  else
+    current_modkey="alt"
+  fi
+
+  local chosen_modkey="$MODKEY_CHOICE"
+  if [ -z "$chosen_modkey" ] && [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
+    echo
+    echo "Choose modkey for dwm (current: ${current_modkey}):"
+    echo "1) Super key (Windows/Command key)"
+    echo "2) Alt key"
+    echo "3) Keep current (${current_modkey})"
+    echo
+    
+    while true; do
+      read -r -p "Enter your choice (1-3): " choice || choice=""
+      case "$choice" in
+        1) chosen_modkey="super"; break ;;
+        2) chosen_modkey="alt"; break ;;
+        3) chosen_modkey="$current_modkey"; break ;;
+        *)
+          if [ -n "$choice" ]; then
+            echo "Invalid choice. Please enter a number between 1-3." >&2
+          else
+            echo "No choice entered, keeping current: ${current_modkey}" >&2
+            chosen_modkey="$current_modkey"
+            break
+          fi
+          ;;
+      esac
+    done
+  elif [ -z "$chosen_modkey" ]; then
+    chosen_modkey="$current_modkey"
+  fi
+
+  if [ -n "$chosen_modkey" ]; then
+    require_command python3 "Python 3 is needed to update dwm config.h."
+    
+    local modkey_value
+    if [ "$chosen_modkey" = "super" ]; then
+      modkey_value="Mod4Mask"
+    else
+      modkey_value="Mod1Mask"
+    fi
+    
+    python3 - "$config_file" "$modkey_value" <<'PY'
+import re
+import sys
+
+path, modkey = sys.argv[1:3]
+with open(path, encoding='utf-8') as fh:
+    data = fh.read()
+
+pattern = re.compile(r'(#define\s+MODKEY\s+)(Mod[14]Mask)')
+if not pattern.search(data):
+    sys.stderr.write('Warning: could not locate MODKEY definition.\n')
+else:
+    new_data = pattern.sub(rf"\1{modkey}", data, count=1)
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(new_data)
+PY
+    echo "Updated dwm modkey to '${chosen_modkey}' (${modkey_value})."
+  fi
+}
+
 copy_with_backup() {
   local source="$1"
   local destination="$2"
@@ -800,6 +894,7 @@ fi
 
 if component_selected "dwm"; then
   configure_dwm_bar_color
+  configure_dwm_modkey
 fi
 
 setup_misc_files
