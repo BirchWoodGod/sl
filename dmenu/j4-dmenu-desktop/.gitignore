@@ -1,0 +1,5 @@
+tests/system_tests/__pycache__
+subprojects/packagecache
+subprojects/Catch2-*
+subprojects/fmt-*
+subprojects/spdlog-*

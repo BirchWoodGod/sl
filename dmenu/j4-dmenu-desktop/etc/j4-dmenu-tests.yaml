@@ -1,0 +1,25 @@
+# This completion is not enabled by default.
+# Only the most useful options and options specific to j4-dmenu-tests (most
+# options are inerited from Catch2) are specified here.
+prog: "j4-dmenu-tests"
+options:
+  - option_strings: ["-h", "--help", "-?"]
+    help: "display usage information"
+
+  - option_strings: ["-s", "--success"]
+    help: "include successful tests in output"
+
+  - option_strings: ["-b", "--break"]
+    help: "break into debugger on failure"
+
+  - option_strings: ["-a", "--abort"]
+    help: "abort at first failure"
+
+  - option_strings: ["-x", "--abortx"]
+    help: "abort after x failures"
+    complete: ["none"]
+    metavar: "NUMBER"
+
+  - option_strings: ["-V", "--j4-verbosity"]
+    help: "set j4 logging verbosity"
+    complete: ["choices", ["DISABLED", "ERROR", "WARNING", "INFO", "DEBUG"]]

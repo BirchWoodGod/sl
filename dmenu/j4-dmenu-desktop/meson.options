@@ -1,0 +1,63 @@
+option(
+    'set-debug',
+    type: 'combo',
+    choices: ['on', 'off', 'auto'],
+    value: 'auto',
+    description: 'Set the DEBUG preprocessor macro. If unset (auto), it will be enabled if builddir has debug enabled.',
+)
+
+option(
+    'split-source',
+    type: 'boolean',
+    value: false,
+    description: 'Make source it\'s own translation unit. This is aimed primarily for developers. It leads to less compilation when compiling both j4-dmenu-desktop and j4-dmenu-tests.',
+)
+
+option(
+    'notify-implementation',
+    type: 'combo',
+    choices: ['inotify', 'kqueue', 'auto'],
+    value: 'auto',
+    description: 'Set the notify implementation.',
+)
+
+option(
+    'override-version',
+    type: 'string',
+    description: 'Override version. Using this option shouldn\'t be necessary as the build system will determine the correct version itself. But it can be still useful for e.g. marking patches in distribution builds.'
+)
+
+option(
+    'enable-tests',
+    type: 'boolean',
+    value: true,
+    description: 'Enable unit tests. If disabled, j4-dmenu-desktop will not depend on Catch2 or pytest.'
+)
+
+option(
+    'dev-fix-coverage',
+    type: 'boolean',
+    value: false,
+    description: 'FOR DEVELOPERS ONLY! Optimise j4-dmenu-desktop for good coverage reports.'
+)
+
+option(
+    'enabled-shell-completions',
+    type: 'array',
+    choices: ['bash', 'fish', 'zsh'],
+    value: ['bash', 'fish', 'zsh'],
+    description: 'Shells to generate completions for.'
+)
+
+option(
+    'generate-shell-completions',
+    type: 'feature',
+    description: 'Use crazy-complete to generate completions.'
+)
+
+option(
+    'generate-tests-shell-completion',
+    type: 'boolean',
+    value: false,
+    description: 'Generate completions for \'j4-dmenu-tests\' command. Useful for developers.'
+)
