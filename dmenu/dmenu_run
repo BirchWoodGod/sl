@@ -1,5 +1,14 @@
 #!/bin/sh
-{
-    dmenu_path
-    j4-dmenu-desktop --no-generic --dmenu="dmenu" --term="st" 2>/dev/null | cut -d' ' -f1
-} | dmenu "$@" | ${SHELL:-"/bin/sh"} &
+# Use j4-dmenu-desktop with a dmenu command that combines desktop entries and PATH executables
+# Based on j4-dmenu-desktop README example (line 145):
+# j4-dmenu-desktop --dmenu="(cat ; (stest -flx $(echo $PATH | tr : ' ') | sort -u)) | dmenu"
+# Use stest directly as shown in README to ensure PATH executables are found
+# Build dmenu command with proper argument escaping
+dmenu_cmd="(cat ; (stest -flx \$(echo \$PATH | tr : ' ') | sort -u)) | dmenu"
+# Add any arguments passed to dmenu_run (these are dmenu arguments from dwm config)
+# Use printf %q to properly escape arguments for shell execution
+for arg in "$@"; do
+    escaped_arg=$(printf '%q' "$arg")
+    dmenu_cmd="$dmenu_cmd $escaped_arg"
+done
+j4-dmenu-desktop --no-generic --dmenu="$dmenu_cmd" --term="st"
