@@ -12,9 +12,10 @@ The `build_suckless.sh` helper takes care of the entire workflow for a fresh ins
 - **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed).
 - **Network Interface Detection**: Automatically detects available network interfaces and lets you choose which one to use for slstatus bandwidth widgets.
 - **Battery Configuration**: Optionally enables battery percentage display in slstatus.
-- **Color Picker**: Interactive menu to choose dwm status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or custom hex values.
+- **DWM Configuration**: Interactive menus to configure dwm modkey (Super/Alt) and status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or custom hex values.
 - **Ly Display Manager**: Automatically configures Ly display manager with animation selection (Doom, Matrix, ColorMix) and enables the service.
 - **File Management**: Copies helper files from `misc0/` into place and builds each requested component.
+- **Desktop Entry Support**: Automatically builds and integrates j4-dmenu-desktop with dmenu for desktop entry support.
 
 ```bash
 ./build_suckless.sh            # full interactive run (dwm, dmenu, st, slstatus)
@@ -31,7 +32,9 @@ During an interactive run the script will:
 
 3. **Battery Configuration**: Ask whether to display battery percentage in slstatus.
 
-4. **Color Selection**: Present an interactive menu to choose the dwm status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or enter a custom hex value.
+4. **DWM Configuration**: 
+   - **Modkey Selection**: Choose between Super key (Windows/Command) or Alt key as the dwm modifier key
+   - **Color Selection**: Present an interactive menu to choose the dwm status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or enter a custom hex value
 
 5. **File Management**: Offer to copy the helper files in `misc0/` to the correct locations:
    - `misc0/xinitrc-config.txt` → `~/.xinitrc`
@@ -47,7 +50,7 @@ During an interactive run the script will:
 You can pre-seed answers with flags if you want a non-interactive run. Examples:
 
 ```bash
-./build_suckless.sh --interface wlan0 --battery --bar-color "#268bd2"
+./build_suckless.sh --interface wlan0 --battery --bar-color "#268bd2" --modkey super
 ./build_suckless.sh --no-copy-desktop --copy-xinit dmenu
 ./build_suckless.sh --skip-packages -y           # keep configs and skip the package check entirely
 ```
@@ -73,6 +76,15 @@ If you prefer to handle packages manually, install them with:
 ```bash
 sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager \
   network-manager-applet tldr brightnessctl alsa-utils firefox net-tools
+```
+
+**Build dependencies for j4-dmenu-desktop:**
+j4-dmenu-desktop requires either Meson (preferred) or CMake to build. Install one of them:
+
+```bash
+sudo pacman -S meson        # Preferred build system
+# or
+sudo pacman -S cmake         # Alternative build system
 ```
 
 ### Display manager: Ly
@@ -117,7 +129,9 @@ The `dmenu` component includes **j4-dmenu-desktop** for desktop entry support. W
 - Executables from your `$PATH`
 - Applications from `.desktop` files (including AppImage launcher entries)
 
-j4-dmenu-desktop source code is included in `dmenu/j4-dmenu-desktop/` and is licensed under **GPL-3.0-or-later** (see `dmenu/j4-dmenu-desktop/LICENSE`). The build script uses Meson (preferred) or CMake to build j4-dmenu-desktop, so ensure one of these is installed.
+j4-dmenu-desktop source code is included in `dmenu/j4-dmenu-desktop/` and is licensed under **GPL-3.0-or-later** (see `dmenu/j4-dmenu-desktop/LICENSE`). The build script uses Meson (preferred) or CMake to build j4-dmenu-desktop, so ensure one of these is installed (see [Recommended packages](#recommended-packages) above).
+
+**Note:** j4-dmenu-desktop is a separate work and remains in its own subdirectory. The GPL license applies only to j4-dmenu-desktop, not to the rest of this repository (which uses MIT/X Consortium licenses for the suckless tools).
 
 ---
 
