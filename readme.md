@@ -1,4 +1,4 @@
-### Currently Broken. Do NOT use. 
+# Currently Broken. Do NOT use. 
 
 # Personal Suckless Desktop Setup
 
