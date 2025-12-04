@@ -1,3 +1,5 @@
+# Currently Broken. Do NOT use. 
+
 # Personal Suckless Desktop Setup
 
 This repository contains my patched builds of **dwm**, **dmenu**, **st**, and **slstatus** along with the supporting files I use to get a minimal Arch Linux desktop running quickly. Everything lives in this repo so I can clone it on a fresh install and have the same environment in a couple of commands.
