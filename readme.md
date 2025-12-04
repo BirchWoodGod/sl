@@ -6,16 +6,24 @@ This repository contains my patched builds of **dwm**, **dmenu**, **st**, and **
 
 ---
 
-## Automated setup with `build_suckless.sh`
+## Quick Start: Automated Setup
+
+The recommended way to set up this desktop environment is using the `build_suckless.sh` script. It automates the entire process from package installation to component building and configuration.
+
+### What the Script Does
+
 The `build_suckless.sh` helper takes care of the entire workflow for a fresh install:
 
-- **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed).
-- **Network Interface Detection**: Automatically detects available network interfaces and lets you choose which one to use for slstatus bandwidth widgets.
-- **Battery Configuration**: Optionally enables battery percentage display in slstatus.
-- **DWM Configuration**: Interactive menus to configure dwm modkey (Super/Alt) and status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or custom hex values.
-- **Ly Display Manager**: Automatically configures Ly display manager with animation selection (Doom, Matrix, ColorMix) and enables the service.
-- **File Management**: Copies helper files from `misc0/` into place and builds each requested component.
-- **Desktop Entry Support**: Automatically builds and integrates j4-dmenu-desktop with dmenu for desktop entry support.
+- **Build Artifact Cleaning**: Automatically cleans all previous build artifacts (binaries, object files, patch artifacts, build directories) before building to ensure a clean state
+- **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed), including `meson` for building j4-dmenu-desktop
+- **Network Interface Detection**: Automatically detects available network interfaces and lets you choose which one to use for slstatus bandwidth widgets
+- **Battery Configuration**: Optionally enables battery percentage display in slstatus
+- **DWM Configuration**: Interactive menus to configure dwm modkey (Super/Alt) and status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or custom hex values
+- **Ly Display Manager**: Automatically configures Ly display manager with animation selection (Doom, Matrix, ColorMix) and enables the service
+- **File Management**: Copies helper files from `misc0/` into place and builds each requested component
+- **Desktop Entry Support**: Automatically builds and integrates j4-dmenu-desktop with dmenu for desktop entry support
+
+### Usage Examples
 
 ```bash
 ./build_suckless.sh            # full interactive run (dwm, dmenu, st, slstatus)
@@ -24,9 +32,11 @@ The `build_suckless.sh` helper takes care of the entire workflow for a fresh ins
 ./build_suckless.sh --help     # show all options
 ```
 
+### Interactive Run Process
+
 During an interactive run the script will:
 
-1. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
+1. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `meson`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
 
 2. **Network Interface Selection**: Automatically detect available network interfaces and present a numbered menu for you to choose which one to use for slstatus bandwidth widgets.
 
@@ -40,12 +50,16 @@ During an interactive run the script will:
    - `misc0/xinitrc-config.txt` → `~/.xinitrc`
    - `misc0/dwm.desktop` → `/usr/share/xsessions/dwm.desktop`
 
-6. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
+6. **Build Artifact Cleaning**: Automatically clean all previous build artifacts (binaries, object files, patch artifacts, build directories) to ensure a fresh build.
 
-7. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
+7. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
+
+8. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
    - Enable and start the Ly service
    - Present animation selection menu (Doom, Matrix, ColorMix, or none)
    - Create backup of Ly config before making changes
+
+### Non-Interactive Usage
 
 You can pre-seed answers with flags if you want a non-interactive run. Examples:
 
@@ -55,11 +69,30 @@ You can pre-seed answers with flags if you want a non-interactive run. Examples:
 ./build_suckless.sh --skip-packages -y           # keep configs and skip the package check entirely
 ```
 
+### Command-Line Options
+
+The script supports various command-line options for customization:
+
+- `-h, --help` - Show help message and exit
+- `-y, --accept-defaults` - Skip interactive prompts and keep current settings
+- `--interface IFACE` - Set network interface for slstatus netspeed widgets
+- `--battery` - Enable the battery widget in slstatus
+- `--no-battery` - Disable the battery widget in slstatus
+- `--bar-color COLOR` - Hex color to use for the dwm selected bar background
+- `--modkey KEY` - Set dwm modkey: 'super' or 'alt' (default: alt)
+- `--copy-xinit` - Copy misc0/xinitrc-config.txt to ~/.xinitrc
+- `--no-copy-xinit` - Skip copying the xinitrc helper (useful with -y)
+- `--copy-desktop` - Copy misc0/dwm.desktop to /usr/share/xsessions/
+- `--no-copy-desktop` - Skip copying the desktop file (useful with -y)
+- `--skip-packages` - Skip installing recommended pacman packages
+
 The script checks whether you are already root; otherwise it uses `sudo` if available. Run it from the repository root after adjusting any configuration you want.
 
 ---
 
-## Manual setup reference
+## Manual Setup Reference
+
+> **Note**: The automated script above is the recommended approach. This section is provided as a reference for those who prefer manual setup or need to understand the individual steps.
 
 ### Minimal Arch install notes
 - I rely on `archinstall` because it gets me to a working base system fast.
@@ -74,7 +107,7 @@ The script checks whether you are already root; otherwise it uses `sudo` if avai
 If you prefer to handle packages manually, install them with:
 
 ```bash
-sudo pacman -Sy feh ly xorg xorg-xinit fastfetch htop nano networkmanager \
+sudo pacman -Sy feh ly xorg xorg-xinit meson fastfetch htop nano networkmanager \
   network-manager-applet tldr brightnessctl alsa-utils firefox net-tools
 ```
 

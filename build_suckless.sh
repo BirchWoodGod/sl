@@ -9,6 +9,7 @@ RECOMMENDED_PACKAGES=(
   ly
   xorg
   xorg-xinit
+  meson
   fastfetch
   htop
   nano
@@ -179,6 +180,56 @@ component_selected() {
     fi
   done
   return 1
+}
+
+clean_build_artifacts() {
+  echo "==> Cleaning build artifacts"
+  
+  # Remove binary executables
+  local binaries=(
+    "${REPO_ROOT}/dwm/dwm"
+    "${REPO_ROOT}/dmenu/dmenu"
+    "${REPO_ROOT}/dmenu/stest"
+    "${REPO_ROOT}/st/st"
+    "${REPO_ROOT}/slstatus/slstatus"
+    "${REPO_ROOT}/dmenu/j4-dmenu-desktop/j4-dmenu-desktop"
+  )
+  
+  for binary in "${binaries[@]}"; do
+    if [ -f "$binary" ]; then
+      rm -f "$binary"
+      echo "Removed: $(basename "$binary")"
+    fi
+  done
+  
+  # Remove object files from component directories
+  local components=("dwm" "dmenu" "st" "slstatus")
+  for component in "${components[@]}"; do
+    local component_dir="${REPO_ROOT}/${component}"
+    if [ -d "$component_dir" ]; then
+      find "$component_dir" -name "*.o" -type f -delete 2>/dev/null || true
+    fi
+  done
+  
+  # Remove j4-dmenu-desktop object files
+  local j4_dir="${REPO_ROOT}/dmenu/j4-dmenu-desktop"
+  if [ -d "$j4_dir" ]; then
+    find "$j4_dir" -name "*.o" -type f -delete 2>/dev/null || true
+  fi
+  
+  # Remove patch artifacts
+  find "$REPO_ROOT" -name "*.orig" -type f -delete 2>/dev/null || true
+  find "$REPO_ROOT" -name "*.rej" -type f -delete 2>/dev/null || true
+  
+  # Remove j4-dmenu-desktop build directory
+  local build_dir="${REPO_ROOT}/dmenu/j4-dmenu-desktop/build"
+  if [ -d "$build_dir" ]; then
+    rm -rf "$build_dir"
+    echo "Removed: j4-dmenu-desktop/build/"
+  fi
+  
+  echo "Build artifacts cleaned."
+  echo
 }
 
 build_j4_dmenu_desktop() {
@@ -940,6 +991,8 @@ if component_selected "dwm"; then
 fi
 
 setup_misc_files
+
+clean_build_artifacts
 
 for component in "${COMPONENTS[@]}"; do
   target_dir="${REPO_ROOT}/${component}"
