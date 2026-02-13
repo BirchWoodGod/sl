@@ -107,7 +107,7 @@ The script checks whether you are already root; otherwise it uses `sudo` if avai
 If you prefer to handle packages manually, install them with:
 
 ```bash
-sudo pacman -Sy feh ly xorg xorg-xinit meson fastfetch htop nano networkmanager \
+sudo pacman -Syu feh ly xorg xorg-xinit meson fastfetch htop nano networkmanager \
   network-manager-applet tldr brightnessctl alsa-utils firefox net-tools
 ```
 

@@ -68,10 +68,10 @@ static const struct arg args[] = {
 	/* function format          argument */
 	//{ datetime, "%s",           "%F %T" },
 	{ run_command, ": %4s | ", "amixer sget Master | awk -F\"[][]\" '/%/ { print $2 }' | head -n1" },
-	{ netspeed_rx,     " ↓%s",                "enp14s0"   },   /* Wi-Fi download speed */
-	{ netspeed_tx,     " ↑%s",                "enp14s0"   },   /* Wi-Fi upload speed */
+	{ netspeed_rx,     " ↓%s",                "enp14s0"   },   /* Network download speed */
+	{ netspeed_tx,     " ↑%s",                "enp14s0"   },   /* Network upload speed */
 	//{ battery_perc, "[Bat %s%%] ", "BAT0" }, /* Battery % for laptops */
-	{ cpu_perc, "[CPU  %s%%] ", NULL	      }, /* CPU Usauge */
-	{ ram_perc, "[RAM  %s%%] ", NULL	      }, /* Ram Usuage */
+	{ cpu_perc, "[CPU  %s%%] ", NULL	      }, /* CPU Usage */
+	{ ram_perc, "[RAM  %s%%] ", NULL	      }, /* RAM Usage */
 	{ datetime, "%s",           "%a %b %d %r" }, /* Date & Time */
 };

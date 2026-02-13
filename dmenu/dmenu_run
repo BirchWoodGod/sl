@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Use j4-dmenu-desktop with a dmenu command that combines desktop entries and PATH executables
 # Based on j4-dmenu-desktop README example (line 145):
 # j4-dmenu-desktop --dmenu="(cat ; (stest -flx $(echo $PATH | tr : ' ') | sort -u)) | dmenu"

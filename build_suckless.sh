@@ -440,7 +440,7 @@ ensure_recommended_packages() {
   fi
 
   if [ "$should_install" = "yes" ]; then
-    local pacman_cmd=(pacman -Sy --needed)
+    local pacman_cmd=(pacman -Syu --needed)
     if [ "$ACCEPT_DEFAULTS" -eq 1 ]; then
       pacman_cmd+=(--noconfirm)
     fi
@@ -456,6 +456,10 @@ ensure_recommended_packages() {
 
 configure_slstatus_interface() {
   local config_file="${REPO_ROOT}/slstatus/config.h"
+  # Fallback to config.def.h if config.h doesn't exist
+  if [ ! -f "$config_file" ]; then
+    config_file="${REPO_ROOT}/slstatus/config.def.h"
+  fi
   local current_iface
   current_iface=$(sed -n 's/.*netspeed_rx.*"\([^"]*\)".*/\1/p' "$config_file" | head -n1)
   current_iface=${current_iface:-unknown}
@@ -559,6 +563,10 @@ PY
 
 configure_slstatus_battery() {
   local config_file="${REPO_ROOT}/slstatus/config.h"
+  # Fallback to config.def.h if config.h doesn't exist
+  if [ ! -f "$config_file" ]; then
+    config_file="${REPO_ROOT}/slstatus/config.def.h"
+  fi
   local desired_state="$1"
 
   if [ -z "$desired_state" ] && [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
@@ -620,6 +628,10 @@ PY
 
 configure_dwm_bar_color() {
   local config_file="${REPO_ROOT}/dwm/config.h"
+  # Fallback to config.def.h if config.h doesn't exist
+  if [ ! -f "$config_file" ]; then
+    config_file="${REPO_ROOT}/dwm/config.def.h"
+  fi
   local current_color
   current_color=$(sed -n 's/.*col_cyan\[\].*= "\([^"]*\)";/\1/p' "$config_file" | head -n1)
   current_color=${current_color:-#000000}
@@ -886,16 +898,15 @@ configure_ly_display_manager() {
   # Configure Ly animation
   local ly_config="/etc/ly/config.ini"
   if run_with_privilege test -f "$ly_config"; then
-    echo "Found Ly config file, configuring animation..."
-    
-    # Create a backup of the config
-    local timestamp
-    timestamp=$(date +%Y%m%d%H%M%S)
-    run_with_privilege cp "$ly_config" "${ly_config}.${timestamp}.bak"
-    echo "Config backed up to ${ly_config}.${timestamp}.bak"
-    
     # Configure Ly animation
     if [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
+      echo "Found Ly config file, configuring animation..."
+      
+      # Create a backup of the config before making changes
+      local timestamp
+      timestamp=$(date +%Y%m%d%H%M%S)
+      run_with_privilege cp "$ly_config" "${ly_config}.${timestamp}.bak"
+      echo "Config backed up to ${ly_config}.${timestamp}.bak"
       echo
       echo "Choose Ly animation style:"
       echo "1) Default (none)"

@@ -2,4 +2,4 @@
 Name=dwm
 Comment=Dynamic window manager (via xinitrc)
 Exec=/bin/sh -l -c "$HOME/.xinitrc"
-Type=XSession
+Type=Application
