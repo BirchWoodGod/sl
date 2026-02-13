@@ -14,6 +14,7 @@ The recommended way to set up this desktop environment is using the `build_suckl
 
 The `build_suckless.sh` helper takes care of the entire workflow for a fresh install:
 
+- **Old DE/DM Removal**: Detects installed display managers (GDM, SDDM, LightDM, etc.) and desktop environments (GNOME, KDE Plasma, XFCE, i3, Sway, Hyprland, etc.) and offers to remove them before setting up dwm + Ly
 - **Build Artifact Cleaning**: Automatically cleans all previous build artifacts (binaries, object files, patch artifacts, build directories) before building to ensure a clean state
 - **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed), including `meson` for building j4-dmenu-desktop
 - **Network Interface Detection**: Automatically detects available network interfaces and lets you choose which one to use for slstatus bandwidth widgets
@@ -36,25 +37,27 @@ The `build_suckless.sh` helper takes care of the entire workflow for a fresh ins
 
 During an interactive run the script will:
 
-1. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `meson`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
+1. **Old DE/DM Detection & Removal**: Scan for installed display managers (GDM, SDDM, LightDM, etc.) and desktop environments (GNOME, KDE Plasma, XFCE, i3, Sway, Hyprland, etc.). If any are found, display them and ask whether to remove them. Removal disables their systemd services and runs `pacman -Rns` to cleanly uninstall them along with unused dependencies. Pass `--remove-de` to auto-remove or `--no-remove-de` to skip.
 
-2. **Network Interface Selection**: Automatically detect available network interfaces and present a numbered menu for you to choose which one to use for slstatus bandwidth widgets.
+2. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `meson`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
 
-3. **Battery Configuration**: Ask whether to display battery percentage in slstatus.
+3. **Network Interface Selection**: Automatically detect available network interfaces and present a numbered menu for you to choose which one to use for slstatus bandwidth widgets.
 
-4. **DWM Configuration**: 
+4. **Battery Configuration**: Ask whether to display battery percentage in slstatus.
+
+5. **DWM Configuration**: 
    - **Modkey Selection**: Choose between Super key (Windows/Command) or Alt key as the dwm modifier key
    - **Color Selection**: Present an interactive menu to choose the dwm status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or enter a custom hex value
 
-5. **File Management**: Offer to copy the helper files in `misc0/` to the correct locations:
+6. **File Management**: Offer to copy the helper files in `misc0/` to the correct locations:
    - `misc0/xinitrc-config.txt` → `~/.xinitrc`
    - `misc0/dwm.desktop` → `/usr/share/xsessions/dwm.desktop`
 
-6. **Build Artifact Cleaning**: Automatically clean all previous build artifacts (binaries, object files, patch artifacts, build directories) to ensure a fresh build.
+7. **Build Artifact Cleaning**: Automatically clean all previous build artifacts (binaries, object files, patch artifacts, build directories) to ensure a fresh build.
 
-7. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
+8. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
 
-8. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
+9. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
    - Enable and start the Ly service
    - Present animation selection menu (Doom, Matrix, ColorMix, or none)
    - Create backup of Ly config before making changes
@@ -67,6 +70,8 @@ You can pre-seed answers with flags if you want a non-interactive run. Examples:
 ./build_suckless.sh --interface wlan0 --battery --bar-color "#268bd2" --modkey super
 ./build_suckless.sh --no-copy-desktop --copy-xinit dmenu
 ./build_suckless.sh --skip-packages -y           # keep configs and skip the package check entirely
+./build_suckless.sh --remove-de                  # auto-remove old DMs and DEs before setup
+./build_suckless.sh --no-remove-de -y            # non-interactive, keep existing DMs/DEs
 ```
 
 ### Command-Line Options
@@ -84,6 +89,8 @@ The script supports various command-line options for customization:
 - `--no-copy-xinit` - Skip copying the xinitrc helper (useful with -y)
 - `--copy-desktop` - Copy misc0/dwm.desktop to /usr/share/xsessions/
 - `--no-copy-desktop` - Skip copying the desktop file (useful with -y)
+- `--remove-de` - Remove detected old display managers and desktop environments
+- `--no-remove-de` - Skip removing old display managers and desktop environments
 - `--skip-packages` - Skip installing recommended pacman packages
 
 The script checks whether you are already root; otherwise it uses `sudo` if available. Run it from the repository root after adjusting any configuration you want.

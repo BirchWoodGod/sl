@@ -29,6 +29,7 @@ BAR_COLOR=""
 MODKEY_CHOICE=""
 COPY_XINIT=""
 COPY_DESKTOP=""
+REMOVE_OLD_DE=""
 CHECK_PACKAGES=1
 
 usage() {
@@ -49,7 +50,9 @@ Options:
       --no-copy-xinit     Skip copying the xinitrc helper (useful with -y)
       --copy-desktop      Copy misc0/dwm.desktop to /usr/share/xsessions/
       --no-copy-desktop   Skip copying the desktop file (useful with -y)
-      --skip-packages      Skip installing recommended pacman packages
+      --remove-de           Remove detected old display managers and desktop environments
+      --no-remove-de        Skip removing old display managers and desktop environments
+      --skip-packages       Skip installing recommended pacman packages
 
 
 Components default to: dwm dmenu st slstatus
@@ -116,6 +119,12 @@ while (($#)); do
       ;;
     --no-copy-desktop)
       COPY_DESKTOP="no"
+      ;;
+    --remove-de)
+      REMOVE_OLD_DE="yes"
+      ;;
+    --no-remove-de)
+      REMOVE_OLD_DE="no"
       ;;
     --skip-packages)
       CHECK_PACKAGES=0
@@ -384,6 +393,147 @@ PY
   else
     echo "Warning: failed to update $pacman_conf; please enable multilib manually." >&2
   fi
+}
+
+# Known display managers (excluding ly, which we install)
+KNOWN_DISPLAY_MANAGERS=(
+  gdm
+  sddm
+  lightdm
+  lxdm
+  slim
+  entrance
+  lemurs
+  greetd
+  emptty
+  tbsm
+)
+
+# Known desktop environments / window managers (excluding dwm)
+KNOWN_DESKTOP_ENVIRONMENTS=(
+  gnome
+  plasma
+  xfce4
+  cinnamon
+  mate
+  budgie-desktop
+  deepin
+  lxqt
+  lxde-common
+  i3-wm
+  sway
+  openbox
+  bspwm
+  herbstluftwm
+  awesome
+  qtile
+  hyprland
+  xmonad
+  fluxbox
+  icewm
+)
+
+detect_and_remove_old_de() {
+  if [ "$REMOVE_OLD_DE" = "no" ]; then
+    echo "Skipping old display manager / desktop environment removal."
+    return
+  fi
+
+  if ! command -v pacman >/dev/null 2>&1; then
+    echo "Warning: pacman not found; skipping old DE/DM detection." >&2
+    return
+  fi
+
+  # --- Detect installed display managers ---
+  local installed_dms=()
+  for dm in "${KNOWN_DISPLAY_MANAGERS[@]}"; do
+    if pacman -Qi "$dm" >/dev/null 2>&1; then
+      installed_dms+=("$dm")
+    fi
+  done
+
+  # --- Detect installed desktop environments ---
+  local installed_des=()
+  for de in "${KNOWN_DESKTOP_ENVIRONMENTS[@]}"; do
+    if pacman -Qi "$de" >/dev/null 2>&1; then
+      installed_des+=("$de")
+    fi
+  done
+
+  if [ ${#installed_dms[@]} -eq 0 ] && [ ${#installed_des[@]} -eq 0 ]; then
+    echo "No other display managers or desktop environments detected."
+    return
+  fi
+
+  echo
+  echo "==> Detected existing display managers / desktop environments"
+  if [ ${#installed_dms[@]} -gt 0 ]; then
+    echo "  Display managers: ${installed_dms[*]}"
+  fi
+  if [ ${#installed_des[@]} -gt 0 ]; then
+    echo "  Desktop environments: ${installed_des[*]}"
+  fi
+  echo
+
+  # In non-interactive mode, only remove if --remove-de was explicitly passed
+  if [ "$ACCEPT_DEFAULTS" -eq 1 ] && [ "$REMOVE_OLD_DE" != "yes" ]; then
+    echo "Non-interactive mode: keeping existing display managers and desktop environments."
+    echo "Use --remove-de to remove them automatically."
+    return
+  fi
+
+  local should_remove="$REMOVE_OLD_DE"
+  if [ -z "$should_remove" ]; then
+    if prompt_yes_no "Would you like to remove these before setting up dwm + Ly?" "n"; then
+      should_remove="yes"
+    else
+      should_remove="no"
+    fi
+  fi
+
+  if [ "$should_remove" != "yes" ]; then
+    echo "Keeping existing display managers and desktop environments."
+    return
+  fi
+
+  # --- Disable and stop old display manager services ---
+  for dm in "${installed_dms[@]}"; do
+    echo "Disabling ${dm} service..."
+    run_with_privilege systemctl disable "${dm}.service" 2>/dev/null || true
+    run_with_privilege systemctl stop "${dm}.service" 2>/dev/null || true
+  done
+
+  # --- Build the combined removal list ---
+  local to_remove=()
+  to_remove+=("${installed_dms[@]}")
+  to_remove+=("${installed_des[@]}")
+
+  echo
+  echo "The following packages will be removed (with unused dependencies):"
+  echo "  ${to_remove[*]}"
+  echo
+
+  # Final confirmation in interactive mode (unless --remove-de was passed)
+  if [ "$ACCEPT_DEFAULTS" -eq 0 ] && [ "$REMOVE_OLD_DE" != "yes" ]; then
+    if ! prompt_yes_no "Proceed with removal?" "n"; then
+      echo "Removal cancelled."
+      return
+    fi
+  fi
+
+  local pacman_cmd=(pacman -Rns)
+  if [ "$ACCEPT_DEFAULTS" -eq 1 ]; then
+    pacman_cmd+=(--noconfirm)
+  fi
+  pacman_cmd+=("${to_remove[@]}")
+
+  echo "Removing: ${to_remove[*]}"
+  if run_with_privilege "${pacman_cmd[@]}"; then
+    echo "Old display managers and desktop environments removed successfully."
+  else
+    echo "Warning: Some packages could not be removed. You may need to handle them manually." >&2
+  fi
+  echo
 }
 
 ensure_recommended_packages() {
@@ -988,6 +1138,8 @@ PY
   echo "Ly display manager configuration complete."
   echo "You can now reboot to use the graphical login with dwm."
 }
+
+detect_and_remove_old_de
 
 ensure_recommended_packages
 
