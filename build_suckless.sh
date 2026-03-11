@@ -496,11 +496,14 @@ detect_and_remove_old_de() {
     return
   fi
 
-  # --- Disable and stop old display manager services ---
+  # --- Disable old display manager services (but do NOT stop them yet) ---
+  # Stopping the active DM would kill the user's graphical session immediately,
+  # leaving a black screen before dwm + Ly are ready.  We only disable the
+  # services here so they won't start on next boot.  The running session stays
+  # alive until the user reboots (at which point Ly will take over).
   for dm in "${installed_dms[@]}"; do
-    echo "Disabling ${dm} service..."
+    echo "Disabling ${dm} service (will take effect on next boot)..."
     run_with_privilege systemctl disable "${dm}.service" 2>/dev/null || true
-    run_with_privilege systemctl stop "${dm}.service" 2>/dev/null || true
   done
 
   # --- Build the combined removal list ---
@@ -530,6 +533,10 @@ detect_and_remove_old_de() {
   echo "Removing: ${to_remove[*]}"
   if run_with_privilege "${pacman_cmd[@]}"; then
     echo "Old display managers and desktop environments removed successfully."
+    echo
+    echo "NOTE: Your current graphical session is still running.  The old DM has"
+    echo "been disabled and will not start on next boot.  Reboot after the script"
+    echo "finishes to switch to Ly + dwm."
   else
     echo "Warning: Some packages could not be removed. You may need to handle them manually." >&2
   fi
@@ -783,7 +790,7 @@ configure_dwm_bar_color() {
     config_file="${REPO_ROOT}/dwm/config.def.h"
   fi
   local current_color
-  current_color=$(sed -n 's/.*col_cyan\[\].*= "\([^"]*\)";/\1/p' "$config_file" | head -n1)
+  current_color=$(sed -n 's/.*col_accent\[\].*= "\([^"]*\)";/\1/p' "$config_file" | head -n1)
   current_color=${current_color:-#000000}
 
   local chosen_color="$BAR_COLOR"
@@ -867,9 +874,9 @@ path, color = sys.argv[1:3]
 with open(path, encoding='utf-8') as fh:
     data = fh.read()
 
-pattern = re.compile(r'(static const char col_cyan\[\]\s*=\s*")([^"]+)(";)')
+pattern = re.compile(r'(static const char col_accent\[\]\s*=\s*")([^"]+)(";)')
 if not pattern.search(data):
-    sys.stderr.write('Warning: could not locate col_cyan definition.\n')
+    sys.stderr.write('Warning: could not locate col_accent definition.\n')
 else:
     new_data = pattern.sub(rf"\1{color}\3", data, count=1)
     with open(path, 'w', encoding='utf-8') as fh:
@@ -1051,12 +1058,6 @@ configure_ly_display_manager() {
     # Configure Ly animation
     if [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
       echo "Found Ly config file, configuring animation..."
-      
-      # Create a backup of the config before making changes
-      local timestamp
-      timestamp=$(date +%Y%m%d%H%M%S)
-      run_with_privilege cp "$ly_config" "${ly_config}.${timestamp}.bak"
-      echo "Config backed up to ${ly_config}.${timestamp}.bak"
       echo
       echo "Choose Ly animation style:"
       echo "1) Default (none)"
@@ -1070,6 +1071,7 @@ configure_ly_display_manager() {
       current_animation=$(run_with_privilege grep -E '^\s*animation\s*=' "$ly_config" 2>/dev/null | sed 's/^\s*animation\s*=\s*//' | tr -d ' ' || echo "none")
       echo "Current animation: ${current_animation}"
       
+      local chosen_animation
       while true; do
         read -r -p "Enter your choice (1-5): " choice || choice=""
         case "$choice" in
@@ -1090,6 +1092,12 @@ configure_ly_display_manager() {
         esac
       done
       
+      # Back up the config before making changes
+      local timestamp
+      timestamp=$(date +%Y%m%d%H%M%S)
+      run_with_privilege cp "$ly_config" "${ly_config}.${timestamp}.bak"
+      echo "Config backed up to ${ly_config}.${timestamp}.bak"
+
       # Update animation setting
       echo "Updating animation to: ${chosen_animation}"
       require_command python3 "Python 3 is needed to update Ly animation configuration."
