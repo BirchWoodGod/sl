@@ -6,5 +6,5 @@
 
 slstatus &
 nm-applet &
-feh --bg-scale ~/pictures/wallpaper.jpg &
+[ -f ~/pictures/wallpaper.jpg ] && feh --bg-scale ~/pictures/wallpaper.jpg &
 exec dwm
