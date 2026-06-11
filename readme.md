@@ -16,7 +16,7 @@ The `build_suckless.sh` helper takes care of the entire workflow for a fresh ins
 
 - **Old DE/DM Removal**: Detects installed display managers (GDM, SDDM, LightDM, etc.) and desktop environments (GNOME, KDE Plasma, XFCE, i3, Sway, Hyprland, etc.) and offers to remove them before setting up dwm + Ly
 - **Build Artifact Cleaning**: Automatically cleans all previous build artifacts (binaries, object files, patch artifacts, build directories) before building to ensure a clean state
-- **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages via `pacman` (using `sudo` when needed), including `meson` for building j4-dmenu-desktop
+- **Package Management**: Ensures the pacman `multilib` repository is enabled and installs any missing recommended desktop packages and build dependencies (`base-devel`, X11/Xft/Xinerama libraries) via `pacman` (using `sudo` when needed), including `meson` for building j4-dmenu-desktop
 - **Network Interface Detection**: Automatically detects available network interfaces and lets you choose which one to use for slstatus bandwidth widgets
 - **Battery Configuration**: Optionally enables battery percentage display in slstatus
 - **DWM Configuration**: Interactive menus to configure dwm modkey (Super/Alt) and status bar highlight color from popular themes (Solarized, Nord, Gruvbox) or custom hex values
@@ -39,7 +39,7 @@ During an interactive run the script will:
 
 1. **Old DE/DM Detection & Removal**: Scan for installed display managers (GDM, SDDM, LightDM, etc.) and desktop environments (GNOME, KDE Plasma, XFCE, i3, Sway, Hyprland, etc.). If any are found, display them and ask whether to remove them. Removal disables their systemd services and runs `pacman -Rns` to cleanly uninstall them along with unused dependencies. Pass `--remove-de` to auto-remove or `--no-remove-de` to skip.
 
-2. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `meson`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
+2. **Package Installation**: Ensure `/etc/pacman.conf` has the `[multilib]` repository enabled, then check `pacman` for the packages I normally install (`feh`, `ly`, `xorg`, `xorg-xinit`, `meson`, `fastfetch`, `htop`, `nano`, `networkmanager`, `network-manager-applet`, `tldr`, `brightnessctl`, `alsa-utils`, `firefox`, `net-tools`) plus build dependencies (`base-devel`, `libx11`, `libxft`, `libxinerama`, `freetype2`, `fontconfig`, `pkgconf`, `python`) and offer to install any that are missing. Pass `--skip-packages` if you want to handle this step yourself.
 
 3. **Network Interface Selection**: Automatically detect available network interfaces and present a numbered menu for you to choose which one to use for slstatus bandwidth widgets.
 
@@ -55,12 +55,13 @@ During an interactive run the script will:
 
 7. **Build Artifact Cleaning**: Automatically clean all previous build artifacts (binaries, object files, patch artifacts, build directories) to ensure a fresh build.
 
-8. **Component Building**: Build whichever components you requested via `make clean install` (using `sudo` when needed). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
+8. **Component Building**: Build whichever components you requested (compiling as your user, with `sudo` only for `make install`). When building `dmenu`, j4-dmenu-desktop is automatically built and installed to enable desktop entry support.
 
 9. **Ly Configuration**: After building dwm, automatically configure Ly display manager:
-   - Enable and start the Ly service
+   - Enable the Ly service and disable any other enabled display managers so they don't conflict on boot
    - Present animation selection menu (Doom, Matrix, ColorMix, or none)
    - Create backup of Ly config before making changes
+   - Start Ly immediately only if no graphical session is currently active (otherwise it takes over on next boot)
 
 ### Non-Interactive Usage
 
@@ -91,7 +92,7 @@ The script supports various command-line options for customization:
 - `--no-copy-desktop` - Skip copying the desktop file (useful with -y)
 - `--remove-de` - Remove detected old display managers and desktop environments
 - `--no-remove-de` - Skip removing old display managers and desktop environments
-- `--skip-packages` - Skip installing recommended pacman packages
+- `--skip-packages` - Skip the recommended/build package installation step
 
 The script checks whether you are already root; otherwise it uses `sudo` if available. Run it from the repository root after adjusting any configuration you want.
 

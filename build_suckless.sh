@@ -4,6 +4,7 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 DEFAULT_COMPONENTS=(dwm dmenu st slstatus)
+
 RECOMMENDED_PACKAGES=(
   feh
   ly
@@ -22,6 +23,19 @@ RECOMMENDED_PACKAGES=(
   net-tools
 )
 
+# Toolchain and libraries needed to compile dwm/dmenu/st/slstatus, plus
+# python which this script uses for config edits.
+BUILD_PACKAGES=(
+  base-devel
+  libx11
+  libxft
+  libxinerama
+  freetype2
+  fontconfig
+  pkgconf
+  python
+)
+
 ACCEPT_DEFAULTS=0
 SLSTATUS_INTERFACE=""
 BATTERY_CHOICE=""
@@ -37,6 +51,7 @@ usage() {
 Usage: ./build_suckless.sh [options] [component...]
 
 Build patched suckless components and optionally configure them beforehand.
+This script targets Arch-based distributions (pacman), e.g. Arch and Manjaro.
 
 Options:
   -h, --help              Show this help message and exit
@@ -50,10 +65,9 @@ Options:
       --no-copy-xinit     Skip copying the xinitrc helper (useful with -y)
       --copy-desktop      Copy misc0/dwm.desktop to /usr/share/xsessions/
       --no-copy-desktop   Skip copying the desktop file (useful with -y)
-      --remove-de           Remove detected old display managers and desktop environments
-      --no-remove-de        Skip removing old display managers and desktop environments
-      --skip-packages       Skip installing recommended pacman packages
-
+      --remove-de         Remove detected old display managers and desktop environments
+      --no-remove-de      Skip removing old display managers and desktop environments
+      --skip-packages     Skip the recommended/build package installation step
 
 Components default to: dwm dmenu st slstatus
 EOF
@@ -166,6 +180,13 @@ else
   fi
 fi
 
+# Running the whole script under sudo makes $HOME point at /root, so per-user
+# files like ~/.xinitrc would land in the wrong place.
+if [ "${EUID:-$(id -u)}" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then
+  echo "Warning: running under sudo; files like ~/.xinitrc will be installed to /root." >&2
+  echo "Run this script as your normal user instead (it uses sudo only where needed)." >&2
+fi
+
 run_with_privilege() {
   if [ ${#SUDO_CMD[@]} -gt 0 ]; then
     "${SUDO_CMD[@]}" "$@"
@@ -227,58 +248,81 @@ clean_build_artifacts() {
   fi
   
   # Remove patch artifacts
-  find "$REPO_ROOT" -name "*.orig" -type f -delete 2>/dev/null || true
-  find "$REPO_ROOT" -name "*.rej" -type f -delete 2>/dev/null || true
+  find "$REPO_ROOT" -name "*.orig" -type f -not -path '*/.git/*' -delete 2>/dev/null || true
+  find "$REPO_ROOT" -name "*.rej" -type f -not -path '*/.git/*' -delete 2>/dev/null || true
   
-  # Remove j4-dmenu-desktop build directory
-  local build_dir="${REPO_ROOT}/dmenu/j4-dmenu-desktop/build"
-  if [ -d "$build_dir" ]; then
-    rm -rf "$build_dir"
-    echo "Removed: j4-dmenu-desktop/build/"
-  fi
+  # Remove j4-dmenu-desktop build directories
+  local build_dir
+  for build_dir in "${REPO_ROOT}/dmenu/j4-dmenu-desktop/build" "${REPO_ROOT}/dmenu/j4-dmenu-desktop/build-cmake"; do
+    if [ -d "$build_dir" ]; then
+      rm -rf "$build_dir"
+      echo "Removed: j4-dmenu-desktop/$(basename "$build_dir")/"
+    fi
+  done
   
   echo "Build artifacts cleaned."
   echo
 }
 
+build_j4_with_meson() {
+  local j4_dir="$1"
+  local build_dir="${j4_dir}/build"
+
+  command -v meson >/dev/null 2>&1 || return 1
+
+  if [ ! -d "$build_dir" ]; then
+    if ! (cd "$j4_dir" && ./meson-setup.sh build); then
+      echo "Warning: meson setup for j4-dmenu-desktop failed (it needs meson >= 1.1)." >&2
+      rm -rf "$build_dir"
+      return 1
+    fi
+  fi
+  if ! (cd "$j4_dir" && meson compile -C build); then
+    echo "Warning: j4-dmenu-desktop meson build failed." >&2
+    return 1
+  fi
+  (cd "$j4_dir" && run_with_privilege meson install -C build)
+}
+
+build_j4_with_cmake() {
+  local j4_dir="$1"
+  local build_dir="${j4_dir}/build-cmake"
+
+  command -v cmake >/dev/null 2>&1 || return 1
+
+  if [ ! -d "$build_dir" ]; then
+    mkdir -p "$build_dir"
+    if ! (cd "$build_dir" && cmake ..); then
+      echo "Warning: cmake setup for j4-dmenu-desktop failed." >&2
+      rm -rf "$build_dir"
+      return 1
+    fi
+  fi
+  if ! (cd "$build_dir" && make); then
+    echo "Warning: j4-dmenu-desktop cmake build failed." >&2
+    return 1
+  fi
+  (cd "$build_dir" && run_with_privilege make install)
+}
+
 build_j4_dmenu_desktop() {
   local j4_dir="${REPO_ROOT}/dmenu/j4-dmenu-desktop"
-  
+
   if [ ! -d "$j4_dir" ]; then
     echo "Warning: j4-dmenu-desktop directory not found at ${j4_dir}. Skipping j4-dmenu-desktop build." >&2
     return
   fi
-  
+
   echo "==> Building j4-dmenu-desktop"
-  
-  # Check for meson (preferred) or cmake
-  if command -v meson >/dev/null 2>&1; then
-    local build_dir="${j4_dir}/build"
-    if [ ! -d "$build_dir" ]; then
-      # Setup meson build directory
-      (cd "$j4_dir" && ./meson-setup.sh build)
-    fi
-    if (cd "$j4_dir" && meson compile -C build); then
-      (cd "$j4_dir" && run_with_privilege meson install -C build)
-      echo "j4-dmenu-desktop build complete."
-    else
-      echo "Warning: j4-dmenu-desktop build failed, but continuing..." >&2
-    fi
-  elif command -v cmake >/dev/null 2>&1; then
-    local build_dir="${j4_dir}/build"
-    if [ ! -d "$build_dir" ]; then
-      mkdir -p "$build_dir"
-      (cd "$build_dir" && cmake ..)
-    fi
-    if (cd "$build_dir" && make); then
-      (cd "$build_dir" && run_with_privilege make install)
-      echo "j4-dmenu-desktop build complete."
-    else
-      echo "Warning: j4-dmenu-desktop build failed, but continuing..." >&2
-    fi
+
+  # Prefer meson, but fall back to cmake if the meson path fails — distro
+  # releases with meson < 1.1 (e.g. 22.04-based Pop!_OS) can't parse its
+  # meson.build.
+  if build_j4_with_meson "$j4_dir" || build_j4_with_cmake "$j4_dir"; then
+    echo "j4-dmenu-desktop build complete."
   else
-    echo "Warning: Neither meson nor cmake found. Skipping j4-dmenu-desktop build." >&2
-    echo "Install meson (preferred) or cmake to build j4-dmenu-desktop." >&2
+    echo "Warning: could not build j4-dmenu-desktop (needs meson >= 1.1 or cmake >= 3.16)." >&2
+    echo "dmenu itself is unaffected; install one of those and re-run for desktop entry support." >&2
   fi
   echo
 }
@@ -550,14 +594,15 @@ ensure_recommended_packages() {
   fi
 
   if ! command -v pacman >/dev/null 2>&1; then
-    echo "Warning: pacman not found; skipping recommended package installation." >&2
+    echo "Warning: pacman not found; this script targets Arch-based distros. Skipping package installation." >&2
     return
   fi
 
   ensure_multilib_repo_enabled
 
+  local wanted_packages=("${RECOMMENDED_PACKAGES[@]}" "${BUILD_PACKAGES[@]}")
   local missing_packages=()
-  for package in "${RECOMMENDED_PACKAGES[@]}"; do
+  for package in "${wanted_packages[@]}"; do
     # Check if it's a package group (like xorg) or individual package
     if pacman -Sg "$package" >/dev/null 2>&1; then
       # It's a package group, check if any packages from the group are installed
@@ -568,7 +613,7 @@ ensure_recommended_packages() {
           break
         fi
       done < <(pacman -Sg "$package" | awk '{print $2}')
-      
+
       if [ "$group_installed" = false ]; then
         missing_packages+=("$package")
       fi
@@ -634,7 +679,7 @@ configure_slstatus_interface() {
         if [ -n "$iface" ] && [[ "$iface" != "lo" ]]; then
           interfaces+=("$iface")
         fi
-      done < <(ip link show | grep -E '^[0-9]+:' | sed 's/^[0-9]*: \([^:]*\):.*/\1/' | grep -v '^lo$')
+      done < <(ip -o link show | awk -F': ' '{print $2}' | cut -d'@' -f1 | grep -v '^lo$')
     elif command -v ifconfig >/dev/null 2>&1; then
       # Fallback to ifconfig
       while read -r iface; do
@@ -966,6 +1011,7 @@ copy_with_backup() {
   local source="$1"
   local destination="$2"
   local use_privilege="$3"
+  local mode="${4:-644}"
 
   if [ ! -e "$source" ]; then
     echo "Warning: source file '$source' not found, skipping copy." >&2
@@ -985,9 +1031,9 @@ copy_with_backup() {
   fi
 
   if [ "$use_privilege" = "yes" ]; then
-    run_with_privilege install -Dm644 "$source" "$destination"
+    run_with_privilege install -Dm"$mode" "$source" "$destination"
   else
-    install -Dm644 "$source" "$destination"
+    install -Dm"$mode" "$source" "$destination"
   fi
   echo "Installed $(basename "$source") to ${destination}."
 }
@@ -1012,7 +1058,8 @@ setup_misc_files() {
   fi
 
   if [ "$should_copy_xinit" = "yes" ]; then
-    copy_with_backup "$xinit_source" "$xinit_target" "no"
+    # Must be executable: the dwm.desktop session entry runs it as a command.
+    copy_with_backup "$xinit_source" "$xinit_target" "no" "755"
   fi
 
   local should_copy_desktop="$COPY_DESKTOP"
@@ -1035,7 +1082,7 @@ setup_misc_files() {
 
 configure_ly_display_manager() {
   # Check if Ly is installed via pacman
-  if ! pacman -Qi ly >/dev/null 2>&1; then
+  if ! command -v pacman >/dev/null 2>&1 || ! pacman -Qi ly >/dev/null 2>&1; then
     echo "Ly display manager not installed, skipping configuration."
     echo "Install Ly with: sudo pacman -S ly"
     return
@@ -1044,16 +1091,37 @@ configure_ly_display_manager() {
   echo
   echo "Configuring Ly display manager for dwm..."
 
+  local ly_config="/etc/ly/config.ini"
+
+  # Newer ly packages ship a templated ly@.service (one instance per TTY)
+  # instead of a plain ly.service; enable whichever this system provides.
+  local ly_unit="ly.service"
+  if [ ! -f /usr/lib/systemd/system/ly.service ]; then
+    local ly_tty=""
+    if run_with_privilege test -f "$ly_config"; then
+      ly_tty=$(run_with_privilege grep -E '^[[:space:]]*tty[[:space:]]*=' "$ly_config" 2>/dev/null | head -n1 | sed 's/.*=[[:space:]]*//' | tr -d '[:space:]' || true)
+    fi
+    ly_unit="ly@tty${ly_tty:-2}.service"
+  fi
+
   # Enable Ly service
-  echo "Enabling Ly service..."
-  if run_with_privilege systemctl enable ly; then
+  echo "Enabling Ly service (${ly_unit})..."
+  if run_with_privilege systemctl enable "$ly_unit"; then
     echo "Ly service enabled successfully."
   else
     echo "Warning: Failed to enable Ly service, but continuing..."
   fi
 
+  # Two enabled display managers race for the seat on boot, which is the
+  # classic black-screen scenario, so disable any others that are enabled.
+  for dm in "${KNOWN_DISPLAY_MANAGERS[@]}"; do
+    if systemctl is-enabled "${dm}.service" >/dev/null 2>&1; then
+      echo "Disabling ${dm} so it does not conflict with Ly on next boot..."
+      run_with_privilege systemctl disable "${dm}.service" || true
+    fi
+  done
+
   # Configure Ly animation
-  local ly_config="/etc/ly/config.ini"
   if run_with_privilege test -f "$ly_config"; then
     # Configure Ly animation
     if [ "$ACCEPT_DEFAULTS" -eq 0 ]; then
@@ -1134,12 +1202,19 @@ PY
     echo "Warning: Ly config file not found at $ly_config"
   fi
 
-  # Start Ly service
-  echo "Starting Ly service..."
-  if run_with_privilege systemctl start ly; then
-    echo "Ly service started successfully."
+  # Starting Ly from inside a running desktop can steal the VT and leave the
+  # current session on a black screen, so only start it when no graphical
+  # session is active.
+  if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    echo "Graphical session detected; not starting Ly now."
+    echo "Ly is enabled and will take over after a reboot."
   else
-    echo "Warning: Failed to start Ly service, but continuing..."
+    echo "Starting Ly service (${ly_unit})..."
+    if run_with_privilege systemctl start "$ly_unit"; then
+      echo "Ly service started successfully."
+    else
+      echo "Warning: Failed to start Ly service, but continuing..."
+    fi
   fi
 
   echo
@@ -1173,7 +1248,10 @@ for component in "${COMPONENTS[@]}"; do
   fi
 
   echo "==> Building ${component}";
-  (cd "${target_dir}" && run_with_privilege make clean install)
+  # Build as the invoking user so the repo doesn't fill with root-owned
+  # artifacts; only the install step needs privilege.
+  (cd "${target_dir}" && make clean && make)
+  (cd "${target_dir}" && run_with_privilege make install)
   echo
   echo "${component} build complete."
   echo
